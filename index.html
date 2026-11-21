@@ -3,317 +3,389 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hệ Thống Quản Lý Lịch Trình Nội Bộ</title>
+  <title>Publishing & Content Management - Nguyễn Thị Tây Thi</title>
   <link rel="stylesheet" href="css/style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-  <!-- Header -->
-  <header class="app-header">
-    <div class="header-container">
-      <div class="brand-section">
-        <div class="brand-logo">📅</div>
-        <div class="brand-title">
-          <h1>QUẢN LÝ LỊCH TRÌNH NỘI BỘ</h1>
-          <p>Điều phối công việc & Thông báo lịch tự động cho từng thành viên</p>
-        </div>
-      </div>
-
-      <div class="header-actions">
-        <!-- Thông báo -->
-        <button class="btn-icon" id="btn-notification-bell" title="Xem thông báo lịch sắp tới">
-          🔔
-          <span class="notification-badge" id="notification-badge" style="display:none;">0</span>
-        </button>
-
-        <!-- Thêm lịch mới -->
-        <button class="btn btn-primary" id="btn-add-schedule">
-          <span>➕</span>
-          <span>Thêm lịch trình</span>
-        </button>
-
-        <!-- Quản lý nhân sự -->
-        <button class="btn btn-secondary" id="btn-manage-members">
-          <span>👥</span>
-          <span>Nhân sự</span>
-        </button>
-
-        <!-- Sao lưu / Khôi phục -->
-        <button class="btn btn-secondary" id="btn-export-data" title="Tải xuống file dữ liệu JSON">
-          <span>💾</span>
-          <span>Xuất dữ liệu</span>
-        </button>
-        <label class="btn btn-secondary" style="cursor: pointer;" title="Nhập file dữ liệu JSON">
-          <span>📥</span>
-          <span>Nhập dữ liệu</span>
-          <input type="file" id="input-import-file" accept=".json" style="display: none;">
-        </label>
-      </div>
+  <div class="sprout-app-shell">
+    <!-- 1. Leftmost Minimal Rail -->
+    <div class="sprout-nav-rail">
+      <div class="sprout-rail-logo" title="Sprout Publishing System">S</div>
+      <button class="sprout-rail-item active" title="Publishing">PUB</button>
+      <button class="sprout-rail-item" title="Listening & Analytics">ANA</button>
+      <button class="sprout-rail-item" title="Inbox & Messages">MSG</button>
+      <button class="sprout-rail-item" title="Settings & Config">SET</button>
     </div>
-  </header>
 
-  <!-- Notification Dropdown Panel -->
-  <div class="notification-panel" id="notification-panel">
-    <div class="notif-header">
-      <span class="notif-title">📢 Lịch trình sắp tới</span>
-      <button class="btn btn-secondary" id="btn-request-web-notif" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">
-        🔔 Bật thông báo Desktop
-      </button>
-    </div>
-    <div class="notif-list" id="notif-list">
-      <!-- Dynamic notifications -->
-    </div>
-  </div>
-
-  <!-- Body Container -->
-  <div class="app-body">
-    <!-- Sidebar: Danh sách nhân viên & Bộ lọc -->
-    <aside class="sidebar">
-      <!-- Bộ lọc nhân sự -->
-      <div class="card">
-        <div class="card-title">
-          <span>Lịch Theo Nhân Sự</span>
-          <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">Bấm để xem riêng</span>
-        </div>
-        <div class="member-list" id="member-list">
-          <!-- Render danh sách nhân viên -->
-        </div>
+    <!-- 2. Sprout Sidebar -->
+    <aside class="sprout-sidebar">
+      <div class="sidebar-brand-header">
+        <div class="brand-company-sub">NGUYỄN THỊ TÂY THI CO.</div>
+        <div class="brand-section-title">Publishing</div>
       </div>
 
-      <!-- Phân loại sự kiện -->
-      <div class="card">
-        <div class="card-title">
-          <span>Phân Loại Lịch</span>
-        </div>
-        <div class="category-filter" id="category-filters">
-          <!-- Render các nhãn danh mục -->
-        </div>
+      <div class="sidebar-menu-list">
+        <button class="sidebar-menu-item active" data-view="calendar">
+          <span>Calendar</span>
+        </button>
+        <button class="sidebar-menu-item" data-view="queue">
+          <span>Sprout Queue</span>
+          <span class="menu-badge" id="badge-queue">0</span>
+        </button>
+        <button class="sidebar-menu-item" data-view="drafts">
+          <span>Drafts</span>
+          <span class="menu-badge" id="badge-drafts">0</span>
+        </button>
+        <button class="sidebar-menu-item" data-view="needs_approval">
+          <span>Needs Approval</span>
+          <span class="menu-badge" id="badge-approval">0</span>
+        </button>
+        <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 6px 0;"></div>
+        <button class="sidebar-menu-item" data-view="brand">
+          <span>Kênh Liên Hệ (15 Kênh)</span>
+        </button>
+        <button class="sidebar-menu-item" data-view="members">
+          <span>Nhân Sự & Đội Ngũ</span>
+        </button>
       </div>
 
-      <!-- Tiện ích nhanh -->
-      <div class="card" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-color: #bbf7d0;">
-        <div style="font-size: 0.85rem; font-weight: 700; color: #166534; margin-bottom: 0.4rem;">
-          💡 Gửi thông báo tức thì
+      <div class="sidebar-footer-user">
+        <div class="user-avatar-badge">TT</div>
+        <div>
+          <div class="user-meta-name">Nguyễn Thị Tây Thi</div>
+          <div class="user-meta-role">Trưởng nhóm Content</div>
         </div>
-        <p style="font-size: 0.78rem; color: #15803d; line-height: 1.4;">
-          Bạn có thể chuyển sang chế độ <strong>Danh sách</strong> và nhấn nút <strong>📤</strong> để tự động tạo mẫu tin nhắn gửi vào nhóm <strong>Zalo / Skype / Email</strong> cho từng thành viên.
-        </p>
       </div>
     </aside>
 
-    <!-- Main Content Area: Lịch & Danh sách -->
-    <main class="content-area">
-      <!-- Toolbar điều hướng thời gian & tìm kiếm -->
-      <div class="view-toolbar">
-        <div class="date-nav">
-          <button class="btn btn-secondary btn-icon" id="btn-prev-month" title="Tháng trước">◀</button>
-          <div class="current-period-title" id="current-period-title">Tháng -- / ----</div>
-          <button class="btn btn-secondary btn-icon" id="btn-next-month" title="Tháng sau">▶</button>
-          <button class="btn btn-secondary" id="btn-today">Hôm nay</button>
+    <!-- 3. Main Workspace -->
+    <main class="sprout-main-workspace">
+      <!-- Topbar Navigation -->
+      <div class="sprout-topbar">
+        <div class="topbar-left">
+          <div class="date-nav-group">
+            <button class="date-nav-btn" id="btn-nav-prev">&lt;</button>
+            <button class="date-nav-btn" id="btn-nav-today">Hôm nay</button>
+            <button class="date-nav-btn" id="btn-nav-next">&gt;</button>
+          </div>
+          <div class="current-period-display" id="period-display">Tuần này</div>
+
+          <!-- Nút chuyển đổi kiểu ô lưới Lịch Tuần & Lịch Tháng -->
+          <div class="view-mode-toggle">
+            <button class="view-mode-btn active" id="btn-mode-week">Lịch Tuần</button>
+            <button class="view-mode-btn" id="btn-mode-month">Lịch Tháng</button>
+          </div>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
-          <!-- Tìm kiếm -->
-          <div class="search-box">
-            <span>🔍</span>
-            <input type="text" id="search-input" placeholder="Tìm kiếm cuộc họp, sự kiện...">
+        <div class="topbar-right">
+          <div class="search-input-box">
+            <input type="text" id="search-posts-input" placeholder="Tìm kiếm bài viết...">
           </div>
 
-          <!-- Chuyển tab hiển thị -->
-          <div class="view-tabs">
-            <button class="tab-btn active" data-view="calendar">Lịch Tháng</button>
-            <button class="tab-btn" data-view="agenda">Danh Sách Lịch</button>
+          <button class="btn-sprout-secondary" id="btn-export-json" title="Xuất file sao lưu">Xuất dữ liệu</button>
+          <label class="btn-sprout-secondary" style="cursor: pointer;" title="Nhập file dữ liệu">
+            Nhập file
+            <input type="file" id="input-import-json" accept=".json" style="display: none;">
+          </label>
+
+          <button class="btn-sprout-primary" id="btn-open-compose">
+            + Bài viết mới
+          </button>
+        </div>
+      </div>
+
+      <!-- Post Volume Bar (Mật độ bài viết) -->
+      <div class="post-volume-bar">
+        <div class="volume-label">Mật độ bài đăng (Post Volume)</div>
+        <div class="volume-chart-track" id="post-volume-track">
+          <!-- Render 7 teal bars -->
+        </div>
+      </div>
+
+      <!-- Filter Strip by Assignee -->
+      <div class="sub-filter-strip" id="member-filter-strip">
+        <!-- Render filter chips -->
+      </div>
+
+      <!-- VIEW A: MAIN CALENDAR CONTAINER (LƯỚI Ô VUÔNG VỪA VẶN MÀN HÌNH) -->
+      <div class="calendar-view-container" id="calendar-container">
+        <!-- 1. Kiểu Lưới Tuần (7 Cột từ Thứ Hai đến Chủ Nhật - Fit 100% không trôi màn hình) -->
+        <div class="sprout-week-grid" id="week-grid-view">
+          <!-- Render 7 ngày trong tuần -->
+        </div>
+
+        <!-- 2. Kiểu Lưới Tháng (Lưới ô vuông lịch tháng) -->
+        <div class="sprout-month-wrapper" id="month-grid-view" style="display: none;">
+          <div class="month-weekdays-row">
+            <div>Thứ Hai</div>
+            <div>Thứ Ba</div>
+            <div>Thứ Tư</div>
+            <div>Thứ Năm</div>
+            <div>Thứ Sáu</div>
+            <div>Thứ Bảy</div>
+            <div style="color: #dc2626;">Chủ Nhật</div>
+          </div>
+          <div class="month-days-grid" id="month-days-grid">
+            <!-- Render các ngày trong tháng -->
           </div>
         </div>
       </div>
 
-      <!-- Lịch Tháng View -->
-      <div class="calendar-card" id="calendar-view-container">
-        <div class="calendar-weekdays">
-          <div>Thứ Hai</div>
-          <div>Thứ Ba</div>
-          <div>Thứ Tư</div>
-          <div>Thứ Năm</div>
-          <div>Thứ Sáu</div>
-          <div style="color: #ea580c;">Thứ Bảy</div>
-          <div style="color: #dc2626;">Chủ Nhật</div>
-        </div>
-        <div class="calendar-days-grid" id="calendar-days-grid">
-          <!-- 35 hoặc 42 ô ngày được tạo bằng JS -->
+      <!-- VIEW B: TABLE VIEW (Cho các tab Queue, Drafts, Needs Approval) -->
+      <div class="sprout-table-view" id="table-view" style="display: none;">
+        <!-- Render table rows -->
+      </div>
+
+      <!-- VIEW C: 15 KÊNH LIÊN HỆ CHÍNH THỨC CÓ NÚT CẤU HÌNH HOẠT ĐỘNG 100% -->
+      <div class="sprout-brand-view" id="brand-view" style="display: none;">
+        <div class="brand-section-card">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <div style="font-size: 14px; font-weight: 700; color: var(--text-main);">
+                Lưới 15 Kênh Liên Hệ Chính Thức & Nhận Diện Thương Hiệu
+              </div>
+              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">
+                Quản lý địa chỉ, hotline, mạng xã hội và kênh truyền thông chính thức. Bấm nút <strong>Cấu hình</strong> ở bất kỳ mục nào để sửa và lưu ngay lập tức.
+              </div>
+            </div>
+            <span style="font-size: 11px; background: #e0f2fe; color: #0284c7; padding: 4px 8px; border-radius: 4px; font-weight: 600;">
+              Lù Noodle Official
+            </span>
+          </div>
+
+          <!-- Lưới 15 kênh liên hệ có icon phù hợp -->
+          <div class="contacts-grid-15" id="contacts-grid-15">
+            <!-- Render 15 contact items -->
+          </div>
         </div>
       </div>
 
-      <!-- Danh Sách Lịch View (Agenda) -->
-      <div class="agenda-view" id="agenda-view-container" style="display: none;">
-        <!-- Nhóm lịch theo từng ngày được tạo bằng JS -->
+      <!-- VIEW D: NHÂN SỰ & ĐỘI NGŨ (Chi tiết Tên, SĐT, Email, Ngày sinh, Vai trò) -->
+      <div class="sprout-members-view" id="members-view" style="display: none;">
+        <div class="table-card" style="padding: 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <div style="font-size: 14px; font-weight: 700; color: var(--text-main);">
+              Danh Sách Đội Ngũ Nhân Sự & Cộng Sự
+            </div>
+            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">
+              Quản lý chi tiết Họ tên, Chức vụ, Số điện thoại, Email nội bộ và Ngày tháng năm sinh.
+            </div>
+          </div>
+          <button class="btn-sprout-primary" id="btn-open-add-member">
+            + Thêm nhân sự mới
+          </button>
+        </div>
+
+        <div class="members-table-container">
+          <div class="members-table-header">
+            <div>HỌ VÀ TÊN</div>
+            <div>CHỨC VỤ / VAI TRÒ</div>
+            <div>SỐ ĐIỆN THOẠI</div>
+            <div>EMAIL NỘI BỘ</div>
+            <div>NGÀY SINH</div>
+            <div style="text-align: right;">THAO TÁC</div>
+          </div>
+          <div id="members-table-body">
+            <!-- Render member rows -->
+          </div>
+        </div>
       </div>
     </main>
   </div>
 
-  <!-- Modal: Thêm / Sửa Lịch Trình -->
-  <div class="modal-overlay" id="event-modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <div class="modal-title" id="modal-title">Thêm Lịch Trình Mới</div>
-        <button class="btn-icon btn-close-modal">✕</button>
+  <!-- MODAL: CẤU HÌNH KÊNH LIÊN HỆ (HOẠT ĐỘNG 100%) -->
+  <div class="compose-overlay" id="contact-config-modal">
+    <div class="table-card" style="width: 480px; max-width: 90vw; margin: auto; padding: 20px;">
+      <div style="font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 6px;" id="contact-config-label">
+        Cấu hình thông tin
       </div>
-      <form id="event-form">
-        <div class="modal-body">
-          <div class="form-group">
-            <label class="form-label required">Tiêu đề lịch trình / sự kiện</label>
-            <input type="text" class="form-input" id="event-title" placeholder="VD: Họp giao ban, Đi gặp khách hàng A..." required>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label required">Loại lịch trình</label>
-              <select class="form-select" id="event-category">
-                <option value="hop">Họp nội bộ / Khách hàng</option>
-                <option value="congtac">Đi công tác / Gặp đối tác</option>
-                <option value="deadline">Hạn chót (Deadline)</option>
-                <option value="catruc">Ca trực / Vận hành</option>
-                <option value="sukien">Sự kiện chung</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label required">Mức độ ưu tiên</label>
-              <select class="form-select" id="event-priority">
-                <option value="low">Bình thường</option>
-                <option value="medium" selected>Quan trọng</option>
-                <option value="high">Khẩn cấp (Ưu tiên cao nhất)</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label required">Ngày bắt đầu</label>
-              <input type="date" class="form-input" id="event-start-date" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label required">Giờ bắt đầu</label>
-              <input type="time" class="form-input" id="event-start-time" required>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label required">Ngày kết thúc</label>
-              <input type="date" class="form-input" id="event-end-date" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label required">Giờ kết thúc</label>
-              <input type="time" class="form-input" id="event-end-time" required>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Địa điểm / Đường dẫn họp Online</label>
-            <input type="text" class="form-input" id="event-location" placeholder="VD: Phòng họp 1, Google Meet, Zoom...">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Thành viên tham gia / phụ trách (chọn nhiều người)</label>
-            <div class="member-chips-container" id="member-chips">
-              <!-- Render chips -->
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Ghi chú & Nội dung chuẩn bị</label>
-            <textarea class="form-textarea" id="event-note" rows="3" placeholder="Nội dung chi tiết, tài liệu cần chuẩn bị..."></textarea>
-          </div>
+      <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 14px;">
+        Nhập nội dung mới hoặc đường dẫn liên kết (Link). Thông tin sẽ được lưu trực tiếp vào hệ thống:
+      </div>
+      <form id="form-contact-config">
+        <div class="sprout-form-group" style="margin-bottom: 16px;">
+          <input type="text" class="sprout-form-input" id="contact-config-input" placeholder="Nhập giá trị mới..." required>
         </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn btn-danger" id="btn-delete-event" style="display: none; margin-right: auto;">
-            <span>🗑</span> Xóa lịch
-          </button>
-          <button type="button" class="btn btn-secondary btn-close-modal">Hủy</button>
-          <button type="submit" class="btn btn-primary">Lưu lịch trình</button>
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button type="button" class="btn-sprout-secondary" id="btn-close-contact-config">Hủy bỏ</button>
+          <button type="submit" class="btn-sprout-primary">Lưu cấu hình</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Modal: Quản lý Nhân sự -->
-  <div class="modal-overlay" id="member-manage-modal">
-    <div class="modal-content" style="max-width: 650px;">
-      <div class="modal-header">
-        <div class="modal-title">Quản Lý Danh Sách Nhân Sự</div>
-        <button class="btn-icon btn-close-modal">✕</button>
+  <!-- MODAL: THÊM / SỬA NHÂN SỰ CHI TIẾT (TÊN, SĐT, EMAIL, NGÀY SINH, VAI TRÒ) -->
+  <div class="compose-overlay" id="member-modal">
+    <div class="table-card" style="width: 520px; max-width: 90vw; margin: auto; padding: 20px;">
+      <div style="font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 14px;" id="member-modal-title">
+        Thêm / Chỉnh Sửa Nhân Sự
       </div>
-      <div class="modal-body">
-        <!-- Form thêm nhân sự mới -->
-        <form id="member-form" style="background: #f8fafc; padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
-          <div style="font-weight: 600; font-size: 0.88rem; margin-bottom: 0.6rem;">➕ Thêm thành viên mới</div>
-          <div class="form-row" style="margin-bottom: 0.6rem;">
-            <div class="form-group">
-              <label class="form-label required">Họ và tên</label>
-              <input type="text" class="form-input" id="new-member-name" placeholder="VD: Hoàng Văn Nam" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Chức vụ / Bộ phận</label>
-              <input type="text" class="form-input" id="new-member-role" placeholder="VD: Chuyên viên Marketing">
-            </div>
-          </div>
-          <div class="form-row" style="margin-bottom: 0.8rem;">
-            <div class="form-group">
-              <label class="form-label">Email</label>
-              <input type="email" class="form-input" id="new-member-email" placeholder="nam.hv@noibo.vn">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Số điện thoại</label>
-              <input type="text" class="form-input" id="new-member-phone" placeholder="09xxxxxxxx">
-            </div>
-          </div>
-          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
-            Thêm vào danh sách nhân sự
-          </button>
-        </form>
+      <form id="member-form" style="display: flex; flex-direction: column; gap: 12px;">
+        <div class="sprout-form-group">
+          <label class="sprout-form-label">Họ và tên nhân sự *</label>
+          <input type="text" class="sprout-form-input" id="modal-member-name" placeholder="Ví dụ: Nguyễn Thị Tây Thi" required>
+        </div>
 
-        <div style="margin-top: 1rem;">
-          <div style="font-weight: 600; font-size: 0.88rem; margin-bottom: 0.6rem;">Danh sách nhân viên hiện tại</div>
-          <div id="manage-members-list">
-            <!-- Render danh sách nhân viên để xóa hoặc xem -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="sprout-form-group">
+            <label class="sprout-form-label">Vai trò / Chuyên môn *</label>
+            <input type="text" class="sprout-form-input" id="modal-member-role" placeholder="Ví dụ: Trưởng nhóm, Designer..." required>
+          </div>
+          <div class="sprout-form-group">
+            <label class="sprout-form-label">Ngày tháng năm sinh</label>
+            <input type="date" class="sprout-form-input" id="modal-member-dob">
           </div>
         </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="sprout-form-group">
+            <label class="sprout-form-label">Số điện thoại liên lạc</label>
+            <input type="text" class="sprout-form-input" id="modal-member-phone" placeholder="09xxxxxxxx">
+          </div>
+          <div class="sprout-form-group">
+            <label class="sprout-form-label">Email nội bộ</label>
+            <input type="email" class="sprout-form-input" id="modal-member-email" placeholder="ten@lùnoodle.vn">
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
+          <button type="button" class="btn-sprout-secondary" id="btn-close-member-modal">Hủy bỏ</button>
+          <button type="submit" class="btn-sprout-primary">Lưu thông tin</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- SLIDE-IN COMPOSE PANEL ("New Post" matching right side of screenshot) -->
+  <div class="compose-overlay" id="compose-overlay">
+    <div class="compose-panel">
+      <div class="compose-header">
+        <div class="compose-title" id="compose-title">Soạn Bài Viết Mới (New Post)</div>
+        <button class="btn-close-compose" id="btn-close-compose">Đóng [X]</button>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary btn-close-modal">Đóng</button>
+
+      <form id="compose-form" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+        <div class="compose-body">
+          <div class="sprout-form-group">
+            <label class="sprout-form-label">Chọn kênh đăng tải (Publish to)</label>
+            <div class="profile-pills-wrap" id="compose-profile-pills">
+              <!-- Render platform pills -->
+            </div>
+          </div>
+
+          <div class="sprout-form-group">
+            <label class="sprout-form-label">Tiêu đề bài viết / Chủ đề nội dung</label>
+            <input type="text" class="sprout-form-input" id="compose-title-input" placeholder="Ví dụ: Thực đơn cà phê mùa đông..." required>
+          </div>
+
+          <div class="sprout-form-group">
+            <label class="sprout-form-label">Nội dung bài viết (Post text)</label>
+            <div class="compose-textarea-box">
+              <textarea class="compose-textarea" id="compose-textarea" placeholder="Nhập nội dung bài đăng, thông điệp truyền thông, hashtag..."></textarea>
+              <div class="textarea-bottom-toolbar">
+                <span>Văn bản thuần túy</span>
+                <span id="char-counter">0 ký tự</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="sprout-form-group">
+            <label class="sprout-form-label">Cộng sự phụ trách thực hiện</label>
+            <select class="sprout-form-select" id="compose-assignee">
+              <!-- Render member options -->
+            </select>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 10px;">
+            <div class="sprout-form-group">
+              <label class="sprout-form-label">Ngày xuất bản</label>
+              <input type="date" class="sprout-form-input" id="compose-date" required>
+            </div>
+            <div class="sprout-form-group">
+              <label class="sprout-form-label">Giờ xuất bản</label>
+              <input type="time" class="sprout-form-input" id="compose-time" required>
+            </div>
+          </div>
+
+          <div class="optimal-times-box">
+            <div class="optimal-header">
+              <span>Gợi ý khung giờ vàng tương tác cao (Optimal Send Times)</span>
+            </div>
+            <div class="optimal-items-list">
+              <div class="optimal-item-row" data-time="08:30">
+                <strong>8:30 AM (Buổi sáng)</strong>
+                <span style="color: #64748b;">Mức độ tương tác: Cao</span>
+              </div>
+              <div class="optimal-item-row" data-time="11:15">
+                <strong>11:15 AM (Trước giờ ăn trưa)</strong>
+                <span style="color: var(--sprout-teal); font-weight: 700;">Tối ưu nhất</span>
+              </div>
+              <div class="optimal-item-row" data-time="14:30">
+                <strong>2:30 PM (Đầu giờ chiều)</strong>
+                <span style="color: #64748b;">Mức độ tương tác: Khá</span>
+              </div>
+              <div class="optimal-item-row" data-time="19:45">
+                <strong>7:45 PM (Giờ vàng tối)</strong>
+                <span style="color: var(--sprout-teal); font-weight: 700;">Tối ưu nhất</span>
+              </div>
+            </div>
+            <div style="font-size: 10px; color: #94a3b8; margin-top: 4px;">* Nhấp vào một khung giờ ở trên để tự động áp dụng vào bài viết.</div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="sprout-form-group">
+              <label class="sprout-form-label">Trạng thái bài viết</label>
+              <select class="sprout-form-select" id="compose-status">
+                <option value="scheduled">Đã lên lịch (Scheduled)</option>
+                <option value="needs_approval">Chờ duyệt (Needs Approval)</option>
+                <option value="draft">Bản nháp (Draft)</option>
+                <option value="published">Đã xuất bản (Published)</option>
+                <option value="rejected">Cần chỉnh sửa lại (Rejected)</option>
+              </select>
+            </div>
+            <div class="sprout-form-group">
+              <label class="sprout-form-label">Đường dẫn hình ảnh (URL)</label>
+              <input type="text" class="sprout-form-input" id="compose-image" placeholder="https://...">
+            </div>
+          </div>
+
+          <div class="sprout-form-group">
+            <label class="sprout-form-label">Ghi chú & Dàn ý nội dung</label>
+            <input type="text" class="sprout-form-input" id="compose-note" placeholder="Ghi chú nội bộ, link file thiết kế Canva, Google Drive...">
+          </div>
+        </div>
+
+        <div class="compose-footer">
+          <button type="button" class="btn-sprout-secondary" id="btn-cancel-compose">Hủy bỏ</button>
+          <button type="button" class="btn-sprout-secondary" id="btn-save-draft">Lưu bản nháp</button>
+          <button type="submit" class="btn-sprout-primary" id="btn-submit-post">Lên lịch (Schedule)</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- REMIND MODAL -->
+  <div class="compose-overlay" id="remind-modal">
+    <div class="table-card" style="width: 500px; max-width: 90vw; margin: auto; padding: 20px;">
+      <div style="font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">
+        Mẫu Thông Báo Tiến Độ & Deadline
+      </div>
+      <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 12px;">
+        Văn bản đã được định dạng chuẩn mực cho giao tiếp nội bộ. Bấm Sao Chép để dán vào nhóm Zalo hoặc Email gửi cho cộng sự:
+      </div>
+      <div style="background: #f8fafc; border: 1px solid var(--sprout-border); border-left: 3px solid var(--sprout-primary); padding: 12px; font-family: monospace; font-size: 11.5px; white-space: pre-wrap; line-height: 1.5; color: #1e293b; margin-bottom: 16px;" id="remind-text-box"></div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button class="btn-sprout-secondary" id="btn-close-remind">Đóng</button>
+        <button class="btn-sprout-primary" id="btn-copy-remind">Sao chép nội dung</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal: Soạn & Gửi thông báo nhanh Zalo/Email -->
-  <div class="modal-overlay" id="share-modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <div class="modal-title">Soạn Thông Báo Lịch Trình (Zalo / Email / Nhóm)</div>
-        <button class="btn-icon btn-close-modal">✕</button>
-      </div>
-      <div class="modal-body">
-        <p style="font-size: 0.82rem; color: var(--text-muted);">
-          Mẫu thông báo đã được định dạng chuẩn chỉnh, bạn chỉ cần bấm nút <strong>Copy</strong> rồi dán thẳng vào nhóm chat Zalo/Telegram hoặc gửi Email cho người liên quan:
-        </p>
-        <div class="copy-preview-box" id="share-content-box"></div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary btn-close-modal">Đóng</button>
-        <button type="button" class="btn btn-primary" id="btn-copy-share">
-          <span>📋</span> Sao chép nội dung
-        </button>
-      </div>
-    </div>
-  </div>
+  <!-- Toast Box -->
+  <div class="sprout-toast-container" id="toast-box"></div>
 
-  <!-- Toast Notification Container -->
-  <div class="toast-container" id="toast-container"></div>
-
-  <!-- JavaScript -->
+  <!-- Scripts -->
   <script src="js/store.js"></script>
   <script src="js/app.js"></script>
 </body>

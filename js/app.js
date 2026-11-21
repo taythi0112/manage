@@ -1,752 +1,927 @@
 /**
- * App UI Logic & Calendar Rendering
- * Tương tác giao diện, lịch tháng, danh sách, bộ lọc, modal & thông báo
+ * Sprout Social Controller - Content Calendar & Publishing
+ * Tích hợp 15 Kênh Liên Hệ có Icon Phù Hợp + Cấu Hình 100%
+ * Chi tiết Đội Ngũ Nhân Sự: Tên, SĐT, Email, Ngày sinh, Chức danh
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-  const store = window.appStore;
+  const store = window.sproutStore;
 
-  // Trạng thái ứng dụng
   const state = {
+    currentView: 'calendar', // 'calendar', 'queue', 'drafts', 'needs_approval', 'rejected', 'brand', 'members'
+    calendarMode: 'week', // 'week' hoặc 'month'
     currentDate: new Date(),
-    viewMode: 'calendar', // 'calendar' hoặc 'agenda'
+    weekStartDate: getMonday(new Date()),
     selectedMemberId: 'all',
     searchKeyword: '',
-    selectedCategories: Object.keys(CATEGORIES),
-    editingEventId: null
+    editingPostId: null,
+    editingContactKey: null,
+    editingMemberId: null
+  };
+
+  function getMonday(d) {
+    const date = new Date(d);
+    const day = date.getDay();
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(date.setDate(diff));
+    monday.setHours(0, 0, 0, 0);
+    return monday;
+  }
+
+  // Bộ Icon SVG phù hợp từng nội dung kênh liên hệ (Không dùng icon tùy tiện)
+  const CONTACT_SVGS = {
+    location: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`,
+    phone: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>`,
+    email: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>`,
+    tax: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="21" x2="21" y2="21"></line><line x1="3" y1="10" x2="21" y2="10"></line><polyline points="5 6 12 3 19 6"></polyline><line x1="4" y1="10" x2="4" y2="21"></line><line x1="20" y1="10" x2="20" y2="21"></line><line x1="8" y1="14" x2="8" y2="17"></line><line x1="12" y1="14" x2="12" y2="17"></line><line x1="16" y1="14" x2="16" y2="17"></line></svg>`,
+    clock: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`,
+    website: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`,
+    facebook: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>`,
+    instagram: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>`,
+    tiktok: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>`,
+    youtube: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>`,
+    shopee: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>`,
+    zalo: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`,
+    zaloOA: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M9 9h6v6H9z"></path></svg>`,
+    cart: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>`,
+    map: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>`
   };
 
   // DOM Elements
-  const memberListEl = document.getElementById('member-list');
-  const categoryFiltersEl = document.getElementById('category-filters');
-  const currentPeriodTitleEl = document.getElementById('current-period-title');
-  const calendarViewContainer = document.getElementById('calendar-view-container');
-  const agendaViewContainer = document.getElementById('agenda-view-container');
-  const searchInput = document.getElementById('search-input');
-  const notificationCountBadge = document.getElementById('notification-badge');
-  const notifListEl = document.getElementById('notif-list');
-  const notifPanel = document.getElementById('notification-panel');
+  const sidebarItems = document.querySelectorAll('.sidebar-menu-item');
+  const periodDisplay = document.getElementById('period-display');
+  const postVolumeTrack = document.getElementById('post-volume-track');
+  const memberFilterStrip = document.getElementById('member-filter-strip');
+  
+  const calendarContainer = document.getElementById('calendar-container');
+  const weekGridView = document.getElementById('week-grid-view');
+  const monthGridView = document.getElementById('month-grid-view');
+  const tableView = document.getElementById('table-view');
+  const brandView = document.getElementById('brand-view');
+  const membersView = document.getElementById('members-view');
 
-  // Modals
-  const eventModal = document.getElementById('event-modal');
-  const eventForm = document.getElementById('event-form');
-  const modalTitle = document.getElementById('modal-title');
-  const deleteEventBtn = document.getElementById('btn-delete-event');
-  const memberChipsContainer = document.getElementById('member-chips');
-  const memberManageModal = document.getElementById('member-manage-modal');
-  const shareModal = document.getElementById('share-modal');
-  const shareContentBox = document.getElementById('share-content-box');
+  const btnModeWeek = document.getElementById('btn-mode-week');
+  const btnModeMonth = document.getElementById('btn-mode-month');
 
-  // Khởi chạy ứng dụng
-  initUI();
+  // Contact Config Modal
+  const contactConfigModal = document.getElementById('contact-config-modal');
+  const contactConfigLabel = document.getElementById('contact-config-label');
+  const contactConfigInput = document.getElementById('contact-config-input');
 
-  function initUI() {
-    renderMembersSidebar();
-    renderCategoryFilters();
-    renderView();
-    updateNotificationBadge();
+  // Member Modal
+  const memberModal = document.getElementById('member-modal');
+  const memberModalTitle = document.getElementById('member-modal-title');
+  const memberForm = document.getElementById('member-form');
+  const inputMemberName = document.getElementById('modal-member-name');
+  const inputMemberRole = document.getElementById('modal-member-role');
+  const inputMemberPhone = document.getElementById('modal-member-phone');
+  const inputMemberEmail = document.getElementById('modal-member-email');
+  const inputMemberDob = document.getElementById('modal-member-dob');
+
+  // Compose Drawer
+  const composeOverlay = document.getElementById('compose-overlay');
+  const composeForm = document.getElementById('compose-form');
+  const composeTitle = document.getElementById('compose-title');
+  const profilePillsWrap = document.getElementById('compose-profile-pills');
+  const composeTextarea = document.getElementById('compose-textarea');
+  const charCounter = document.getElementById('char-counter');
+  const composeDateInput = document.getElementById('compose-date');
+  const composeTimeInput = document.getElementById('compose-time');
+  const composeAssigneeSelect = document.getElementById('compose-assignee');
+  const composeImageInput = document.getElementById('compose-image');
+  const composeNoteInput = document.getElementById('compose-note');
+
+  // Remind Modal
+  const remindModal = document.getElementById('remind-modal');
+  const remindTextBox = document.getElementById('remind-text-box');
+
+  init();
+
+  function init() {
+    renderSidebarCounts();
+    renderMemberFilterBar();
+    renderVolumeChart();
+    renderCurrentView();
     bindEvents();
   }
 
-  // --- Rendering Functions ---
+  function renderSidebarCounts() {
+    const stats = store.getStats();
+    const badgeQueue = document.getElementById('badge-queue');
+    const badgeDrafts = document.getElementById('badge-drafts');
+    const badgeApproval = document.getElementById('badge-approval');
 
-  function renderMembersSidebar() {
+    if (badgeQueue) badgeQueue.textContent = stats.scheduled;
+    if (badgeDrafts) badgeDrafts.textContent = stats.draft;
+    if (badgeApproval) badgeApproval.textContent = stats.needs_approval;
+  }
+
+  function renderMemberFilterBar() {
+    if (!memberFilterStrip) return;
     const members = store.getMembers();
-    const events = store.getEvents();
+    memberFilterStrip.innerHTML = '<span class="filter-label">Phụ trách:</span>';
 
-    memberListEl.innerHTML = '';
-    members.forEach(member => {
-      // Đếm số lịch của từng người
-      let count = 0;
-      if (member.id === 'all') {
-        count = events.length;
-      } else {
-        count = events.filter(e => e.assignees && e.assignees.includes(member.id)).length;
-      }
-
-      const item = document.createElement('div');
-      item.className = `member-item ${state.selectedMemberId === member.id ? 'active' : ''}`;
-      item.dataset.id = member.id;
-
-      const avatarStyle = member.id === 'all' 
-        ? 'background: #2563eb; color: white;' 
-        : `background: ${member.color || '#3b82f6'};`;
-
-      item.innerHTML = `
-        <div class="member-avatar" style="${avatarStyle}">
-          ${member.avatar || member.name.charAt(0)}
-        </div>
-        <div class="member-info">
-          <div class="member-name">${member.name}</div>
-          <div class="member-role">${member.role || 'Thành viên'}</div>
-        </div>
-        <span class="member-count">${count}</span>
-      `;
-
-      item.addEventListener('click', () => {
-        state.selectedMemberId = member.id;
-        renderMembersSidebar();
-        renderView();
-        updateNotificationBadge();
+    members.forEach(m => {
+      const btn = document.createElement('button');
+      btn.className = `filter-chip ${state.selectedMemberId === m.id ? 'active' : ''}`;
+      btn.textContent = `${m.name} (${m.code})`;
+      btn.addEventListener('click', () => {
+        state.selectedMemberId = m.id;
+        renderMemberFilterBar();
+        renderCurrentView();
       });
-
-      memberListEl.appendChild(item);
+      memberFilterStrip.appendChild(btn);
     });
   }
 
-  function renderCategoryFilters() {
-    categoryFiltersEl.innerHTML = '';
-    Object.values(CATEGORIES).forEach(cat => {
-      const isEnabled = state.selectedCategories.includes(cat.id);
-      const tag = document.createElement('div');
-      tag.className = `category-tag ${!isEnabled ? 'disabled' : ''}`;
-      tag.innerHTML = `
-        <span class="cat-dot" style="background: ${cat.color};"></span>
-        <span>${cat.name}</span>
-      `;
-      tag.addEventListener('click', () => {
-        if (isEnabled) {
-          state.selectedCategories = state.selectedCategories.filter(c => c !== cat.id);
-        } else {
-          state.selectedCategories.push(cat.id);
-        }
-        renderCategoryFilters();
-        renderView();
-      });
-      categoryFiltersEl.appendChild(tag);
+  function renderVolumeChart() {
+    if (!postVolumeTrack) return;
+    postVolumeTrack.innerHTML = '';
+
+    const startDateStr = state.calendarMode === 'week' 
+      ? state.weekStartDate.toISOString().split('T')[0]
+      : new Date(state.currentDate.getFullYear(), state.currentDate.getMonth(), 1).toISOString().split('T')[0];
+
+    const volumeData = store.getDailyPostVolume(startDateStr, 7);
+
+    volumeData.forEach(item => {
+      const dayBox = document.createElement('div');
+      dayBox.className = 'volume-day-item';
+
+      const pill = document.createElement('div');
+      pill.className = `volume-pill ${item.count === 0 ? 'zero' : ''}`;
+      const height = item.count === 0 ? 3 : Math.min(20, 5 + item.count * 4);
+      pill.style.height = `${height}px`;
+      pill.title = `${item.date}: ${item.count} bài`;
+
+      const text = document.createElement('span');
+      text.className = 'volume-day-text';
+      text.textContent = item.dayNum;
+
+      dayBox.appendChild(pill);
+      dayBox.appendChild(text);
+      postVolumeTrack.appendChild(dayBox);
     });
   }
 
-  function renderView() {
-    updatePeriodTitle();
-    const filteredEvents = store.filterEvents({
+  function renderCurrentView() {
+    renderSidebarCounts();
+    renderVolumeChart();
+
+    let statusFilter = 'all';
+    if (state.currentView === 'queue') statusFilter = 'scheduled';
+    else if (state.currentView === 'drafts') statusFilter = 'draft';
+    else if (state.currentView === 'needs_approval') statusFilter = 'needs_approval';
+    else if (state.currentView === 'rejected') statusFilter = 'rejected';
+
+    const posts = store.filterPosts({
       memberId: state.selectedMemberId,
       keyword: state.searchKeyword,
-      categories: state.selectedCategories
+      status: statusFilter
     });
 
-    if (state.viewMode === 'calendar') {
-      calendarViewContainer.style.display = 'block';
-      agendaViewContainer.style.display = 'none';
-      renderCalendar(filteredEvents);
+    // Hide all
+    calendarContainer.style.display = 'none';
+    tableView.style.display = 'none';
+    brandView.style.display = 'none';
+    membersView.style.display = 'none';
+
+    if (state.currentView === 'brand') {
+      brandView.style.display = 'flex';
+      renderBrandAndContacts();
+    } else if (state.currentView === 'members') {
+      membersView.style.display = 'block';
+      renderMembersManagement();
+    } else if (state.currentView === 'calendar') {
+      calendarContainer.style.display = 'flex';
+      if (state.calendarMode === 'week') {
+        weekGridView.style.display = 'grid';
+        monthGridView.style.display = 'none';
+        renderWeekGrid(posts);
+      } else {
+        weekGridView.style.display = 'none';
+        monthGridView.style.display = 'flex';
+        renderMonthGrid(posts);
+      }
     } else {
-      calendarViewContainer.style.display = 'none';
-      agendaViewContainer.style.display = 'flex';
-      renderAgenda(filteredEvents);
+      tableView.style.display = 'block';
+      renderTableView(posts);
     }
   }
 
-  function updatePeriodTitle() {
-    const year = state.currentDate.getFullYear();
-    const month = state.currentDate.getMonth() + 1;
-    currentPeriodTitleEl.textContent = `Tháng ${month} / ${year}`;
+  // --- 1. RENDER 15 KÊNH LIÊN HỆ CÓ ICON PHÙ HỢP & NÚT CẤU HÌNH ---
+  function renderBrandAndContacts() {
+    const brand = store.getBrand();
+    const grid = document.getElementById('contacts-grid-15');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const contacts = brand.contacts || {};
+    Object.keys(contacts).forEach(key => {
+      const item = contacts[key];
+      const box = document.createElement('div');
+      box.className = 'contact-box-item';
+
+      const svgIcon = CONTACT_SVGS[item.iconType] || CONTACT_SVGS.website;
+      const isUnset = !item.value || item.value === 'Chưa thiết lập';
+
+      box.innerHTML = `
+        <div class="contact-box-left">
+          <div class="contact-icon-frame">${svgIcon}</div>
+          <div class="contact-text-info">
+            <div class="contact-item-title">${item.label}</div>
+            <div class="contact-item-val ${isUnset ? 'unset' : ''}" title="${item.value}">${item.value}</div>
+          </div>
+        </div>
+        <button class="btn-config-contact" data-key="${key}">Cấu hình</button>
+      `;
+
+      box.querySelector('.btn-config-contact').addEventListener('click', () => {
+        openContactConfigModal(key, item);
+      });
+
+      grid.appendChild(box);
+    });
   }
 
-  // --- Render Month Calendar ---
-  function renderCalendar(events) {
-    const calendarGrid = document.getElementById('calendar-days-grid');
-    calendarGrid.innerHTML = '';
+  function openContactConfigModal(key, item) {
+    state.editingContactKey = key;
+    contactConfigLabel.textContent = `Cấu hình thông tin: ${item.label}`;
+    contactConfigInput.value = item.value === 'Chưa thiết lập' ? '' : item.value;
+    contactConfigModal.classList.add('active');
+  }
 
-    const year = state.currentDate.getFullYear();
-    const month = state.currentDate.getMonth();
+  // --- 2. RENDER NHÂN SỰ CHI TIẾT (TÊN, SĐT, EMAIL, NGÀY SINH, VAI TRÒ) ---
+  function renderMembersManagement() {
+    const tableBody = document.getElementById('members-table-body');
+    if (!tableBody) return;
+    tableBody.innerHTML = '';
 
-    // Ngày đầu tiên và ngày cuối cùng của tháng
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
+    const members = store.getMembers().filter(m => m.id !== 'all');
 
-    // Tính thứ của ngày đầu tiên (Chủ nhật = 0, Thứ hai = 1,...)
-    // Chuyển về: Thứ 2 = 0, ..., Chủ Nhật = 6
+    members.forEach(m => {
+      const row = document.createElement('div');
+      row.className = 'members-table-row';
+      const isLeader = m.id === 'nv_taythi';
+
+      row.innerHTML = `
+        <div>
+          <div style="font-weight: 700; color: var(--text-main);">
+            ${m.name} ${isLeader ? '<span style="font-size: 10px; background: #e0f2fe; color: #0284c7; padding: 2px 5px; border-radius: 3px; margin-left: 4px;">Trưởng nhóm</span>' : ''}
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted);">Mã: ${m.code}</div>
+        </div>
+        <div>${m.role || 'Chuyên viên'}</div>
+        <div>${m.phone || 'Chưa thiết lập'}</div>
+        <div style="overflow: hidden; text-overflow: ellipsis;">${m.email || 'Chưa thiết lập'}</div>
+        <div>${m.dob ? formatDateDisplay(m.dob) : 'Chưa thiết lập'}</div>
+        <div style="display: flex; gap: 6px;">
+          <button class="btn-sprout-secondary btn-edit-member" data-id="${m.id}" style="padding: 3px 6px; font-size: 11px;">Chỉnh sửa</button>
+          ${!isLeader ? `<button class="btn-sprout-secondary btn-del-member" data-id="${m.id}" style="padding: 3px 6px; font-size: 11px; color: #dc2626;">Xóa</button>` : ''}
+        </div>
+      `;
+
+      row.querySelector('.btn-edit-member').addEventListener('click', () => {
+        openEditMemberModal(m);
+      });
+
+      const delBtn = row.querySelector('.btn-del-member');
+      if (delBtn) {
+        delBtn.addEventListener('click', () => {
+          if (confirm(`Bạn có chắc chắn muốn xóa nhân sự "${m.name}" khỏi danh sách?`)) {
+            store.deleteMember(m.id);
+            renderMembersManagement();
+            renderMemberFilterBar();
+            showToast(`Đã xóa nhân sự: ${m.name}`);
+          }
+        });
+      }
+
+      tableBody.appendChild(row);
+    });
+  }
+
+  function formatDateDisplay(dateStr) {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateStr;
+  }
+
+  function openEditMemberModal(m = null) {
+    memberForm.reset();
+    if (m) {
+      state.editingMemberId = m.id;
+      memberModalTitle.textContent = `Chỉnh Sửa Thông Tin: ${m.name}`;
+      inputMemberName.value = m.name || '';
+      inputMemberRole.value = m.role || '';
+      inputMemberPhone.value = m.phone || '';
+      inputMemberEmail.value = m.email || '';
+      inputMemberDob.value = m.dob || '';
+    } else {
+      state.editingMemberId = null;
+      memberModalTitle.textContent = 'Thêm Nhân Sự Mới';
+    }
+    memberModal.classList.add('active');
+  }
+
+  // --- 3. RENDER WEEK GRID ---
+  function renderWeekGrid(posts) {
+    if (!weekGridView) return;
+    weekGridView.innerHTML = '';
+
+    const baseDate = new Date(state.weekStartDate);
+    const dayNames = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
+
+    const endDate = new Date(baseDate);
+    endDate.setDate(endDate.getDate() + 6);
+    if (periodDisplay) {
+      periodDisplay.textContent = `Tuần: ${baseDate.getDate()}/${baseDate.getMonth() + 1} - ${endDate.getDate()}/${endDate.getMonth() + 1}/${endDate.getFullYear()}`;
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    for (let i = 0; i < 7; i++) {
+      const curDate = new Date(baseDate);
+      curDate.setDate(curDate.getDate() + i);
+      const dateStr = curDate.toISOString().split('T')[0];
+      const isToday = dateStr === todayStr;
+
+      const colCell = document.createElement('div');
+      colCell.className = `week-col-cell ${isToday ? 'today-col' : ''}`;
+
+      const header = document.createElement('div');
+      header.className = 'week-col-header';
+      header.innerHTML = `
+        <div class="week-day-title">${dayNames[i]} ${curDate.getDate()}/${curDate.getMonth() + 1}</div>
+        <button class="btn-add-day-post" data-date="${dateStr}">+ Thêm bài</button>
+      `;
+
+      header.querySelector('.btn-add-day-post').addEventListener('click', () => {
+        openComposeDrawer(null, dateStr);
+      });
+
+      const postsStream = document.createElement('div');
+      postsStream.className = 'week-col-posts-stream';
+
+      const dayPosts = posts.filter(p => p.date === dateStr).sort((a, b) => a.time.localeCompare(b.time));
+
+      if (dayPosts.length === 0) {
+        postsStream.innerHTML = `<div style="text-align: center; color: #94a3b8; font-size: 11px; padding: 20px 0;">Trống</div>`;
+      } else {
+        dayPosts.forEach(p => {
+          const card = document.createElement('div');
+          card.className = 'sprout-post-card';
+
+          const primaryPlatformId = (p.platforms && p.platforms[0]) || 'facebook';
+          const platInfo = PLATFORMS[primaryPlatformId] || PLATFORMS.facebook;
+          const assigneeCodes = (p.assignees || []).map(id => store.getMemberById(id)?.code || 'NV').join(', ');
+
+          let imgHtml = '';
+          if (p.image) {
+            imgHtml = `<div class="card-thumbnail-box"><img src="${p.image}" alt="Hình bài đăng"></div>`;
+          }
+
+          card.innerHTML = `
+            <div class="card-top-meta">
+              <span class="card-channel-tag" style="background: ${platInfo.bg}; color: ${platInfo.color};">
+                ${platInfo.code} @taythi
+              </span>
+              <span class="card-time">${p.time}</span>
+            </div>
+            <div class="card-content-excerpt">${p.content || p.title}</div>
+            ${imgHtml}
+            <div class="card-footer-actions">
+              <span class="assignee-initials" title="Phụ trách: ${assigneeCodes}">PT: ${assigneeCodes}</span>
+              <div class="action-links">
+                <button class="action-link-btn btn-remind" data-id="${p.id}">Nhắc việc</button>
+                <button class="action-link-btn btn-edit" data-id="${p.id}">Sửa</button>
+                <button class="action-link-btn btn-delete" data-id="${p.id}" style="color: #dc2626;">Xóa</button>
+              </div>
+            </div>
+          `;
+
+          card.querySelector('.btn-edit').addEventListener('click', (e) => {
+            e.stopPropagation();
+            openComposeDrawer(p.id);
+          });
+          card.querySelector('.btn-remind').addEventListener('click', (e) => {
+            e.stopPropagation();
+            openRemindModal(p.id);
+          });
+          card.querySelector('.btn-delete').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (confirm(`Bạn có chắc muốn xóa bài "${p.title}"?`)) {
+              store.deletePost(p.id);
+              renderCurrentView();
+              showToast('Đã xóa bài viết khỏi lịch!');
+            }
+          });
+
+          card.addEventListener('click', () => {
+            openComposeDrawer(p.id);
+          });
+
+          postsStream.appendChild(card);
+        });
+      }
+
+      colCell.appendChild(header);
+      colCell.appendChild(postsStream);
+      weekGridView.appendChild(colCell);
+    }
+  }
+
+  // --- 4. RENDER MONTH GRID ---
+  function renderMonthGrid(posts) {
+    const grid = document.getElementById('month-days-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const y = state.currentDate.getFullYear();
+    const m = state.currentDate.getMonth();
+
+    if (periodDisplay) {
+      periodDisplay.textContent = `Tháng ${m + 1} / ${y}`;
+    }
+
+    const firstDay = new Date(y, m, 1);
+    const lastDay = new Date(y, m + 1, 0);
+
     let startingDayOfWeek = firstDay.getDay() - 1;
     if (startingDayOfWeek === -1) startingDayOfWeek = 6;
 
-    const prevMonthLastDay = new Date(year, month, 0).getDate();
+    const prevMonthLastDay = new Date(y, m, 0).getDate();
     const totalDays = lastDay.getDate();
 
     const today = new Date();
-    const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+    const isCurrentMonth = today.getFullYear() === y && today.getMonth() === m;
     const todayDate = today.getDate();
 
-    // Các ngày của tháng trước để lấp đầy hàng đầu
     for (let i = startingDayOfWeek - 1; i >= 0; i--) {
       const dayNum = prevMonthLastDay - i;
       const cell = document.createElement('div');
-      cell.className = 'calendar-cell other-month';
-      cell.innerHTML = `
-        <div class="day-header"><span class="day-number">${dayNum}</span></div>
-      `;
-      calendarGrid.appendChild(cell);
+      cell.className = 'month-day-cell other-month';
+      cell.innerHTML = `<div class="month-day-top"><span class="month-day-num">${dayNum}</span></div>`;
+      grid.appendChild(cell);
     }
 
-    // Các ngày trong tháng hiện tại
     for (let day = 1; day <= totalDays; day++) {
       const cell = document.createElement('div');
       const isToday = isCurrentMonth && day === todayDate;
-      cell.className = `calendar-cell ${isToday ? 'today' : ''}`;
+      cell.className = `month-day-cell ${isToday ? 'today-cell' : ''}`;
 
-      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      const dayEvents = events.filter(e => e.startDate <= dateStr && e.endDate >= dateStr);
+      const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dayPosts = posts.filter(p => p.date === dateStr).sort((a, b) => a.time.localeCompare(b.time));
 
-      let eventsHtml = '';
-      const maxDisplay = 3;
-      const displayEvents = dayEvents.slice(0, maxDisplay);
-
-      displayEvents.forEach(evt => {
-        const cat = CATEGORIES[evt.category] || CATEGORIES.hop;
-        eventsHtml += `
-          <div class="event-capsule" 
-               style="background: ${cat.bg}; color: ${cat.color}; border-left-color: ${cat.color};"
-               data-event-id="${evt.id}"
-               title="${evt.startTime} ${evt.title}">
-            <span>${evt.startTime}</span>
-            <span style="overflow:hidden;text-overflow:ellipsis;">${evt.title}</span>
+      let capsulesHtml = '';
+      dayPosts.slice(0, 3).forEach(p => {
+        const primaryPlat = PLATFORMS[p.platforms[0]] || PLATFORMS.facebook;
+        capsulesHtml += `
+          <div class="month-post-capsule" style="border-left-color: ${primaryPlat.color};" data-id="${p.id}" title="${p.time} - ${p.title}">
+            <span style="font-weight:700;">${p.time}</span>
+            <span>${p.title}</span>
           </div>
         `;
       });
 
-      if (dayEvents.length > maxDisplay) {
-        eventsHtml += `
-          <button class="event-more-btn" data-date="${dateStr}">
-            +${dayEvents.length - maxDisplay} lịch nữa...
-          </button>
-        `;
+      if (dayPosts.length > 3) {
+        capsulesHtml += `<div style="font-size: 9.5px; color: #0073e6; font-weight:700;">+${dayPosts.length - 3} bài nữa</div>`;
       }
 
       cell.innerHTML = `
-        <div class="day-header">
-          <span class="day-number">${day}</span>
-          ${isToday ? '<span style="font-size: 0.65rem; color: var(--primary); font-weight:700;">Hôm nay</span>' : ''}
+        <div class="month-day-top">
+          <span class="month-day-num">${day}</span>
+          ${isToday ? '<span style="font-size: 9.5px; color: #0073e6; font-weight:700;">Hôm nay</span>' : ''}
         </div>
-        <div class="cell-events">${eventsHtml}</div>
+        <div class="month-cell-posts">${capsulesHtml}</div>
       `;
 
-      // Bấm vào ô ngày để tạo nhanh lịch trình cho ngày đó
       cell.addEventListener('click', (e) => {
-        if (e.target.closest('.event-capsule')) {
-          const evtId = e.target.closest('.event-capsule').dataset.eventId;
-          openEditEventModal(evtId);
-          return;
+        const capsule = e.target.closest('.month-post-capsule');
+        if (capsule) {
+          openComposeDrawer(capsule.dataset.id);
+        } else {
+          openComposeDrawer(null, dateStr);
         }
-        if (e.target.closest('.event-more-btn')) {
-          // Chuyển sang xem danh sách ngày đó
-          state.viewMode = 'agenda';
-          document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.view === 'agenda'));
-          renderView();
-          return;
-        }
-        openCreateEventModal(dateStr);
       });
 
-      calendarGrid.appendChild(cell);
+      grid.appendChild(cell);
     }
 
-    // Lấp đầy các ô trống còn lại của tuần cuối
     const totalCells = startingDayOfWeek + totalDays;
     const remainingDays = (7 - (totalCells % 7)) % 7;
     for (let day = 1; day <= remainingDays; day++) {
       const cell = document.createElement('div');
-      cell.className = 'calendar-cell other-month';
-      cell.innerHTML = `
-        <div class="day-header"><span class="day-number">${day}</span></div>
-      `;
-      calendarGrid.appendChild(cell);
+      cell.className = 'month-day-cell other-month';
+      cell.innerHTML = `<div class="month-day-top"><span class="month-day-num">${day}</span></div>`;
+      grid.appendChild(cell);
     }
   }
 
-  // --- Render Agenda / List View ---
-  function renderAgenda(events) {
-    agendaViewContainer.innerHTML = '';
+  // --- 5. RENDER TABLE VIEW FOR QUEUE/DRAFTS ---
+  function renderTableView(posts) {
+    if (!tableView) return;
+    tableView.innerHTML = '';
 
-    if (events.length === 0) {
-      agendaViewContainer.innerHTML = `
-        <div class="card" style="text-align: center; padding: 3rem 1rem; color: var(--text-muted);">
-          <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📅</div>
-          <p style="font-weight: 600; font-size: 1rem;">Không có lịch trình nào phù hợp</p>
-          <p style="font-size: 0.85rem; margin-top: 0.25rem;">Hãy thử tìm kiếm từ khóa khác hoặc nhấn "+ Thêm lịch mới"</p>
+    if (posts.length === 0) {
+      tableView.innerHTML = `
+        <div class="table-card" style="padding: 40px 20px; text-align: center; color: var(--text-muted);">
+          <div style="font-size: 13px; font-weight: 600;">Không có bài viết nào trong mục này</div>
+          <div style="font-size: 12px; margin-top: 4px;">Bấm nút "+ Bài viết mới" để lên kế hoạch content</div>
         </div>
       `;
       return;
     }
 
-    // Nhóm sự kiện theo ngày
-    const grouped = {};
-    events.forEach(evt => {
-      const dateKey = evt.startDate;
-      if (!grouped[dateKey]) grouped[dateKey] = [];
-      grouped[dateKey].push(evt);
-    });
+    const tableCard = document.createElement('div');
+    tableCard.className = 'table-card';
 
-    // Sắp xếp ngày tăng dần
-    const sortedDates = Object.keys(grouped).sort();
+    posts.forEach(p => {
+      const row = document.createElement('div');
+      row.className = 'table-row';
 
-    sortedDates.forEach(dateStr => {
-      const groupEl = document.createElement('div');
-      groupEl.className = 'agenda-group';
+      const primaryPlatformId = (p.platforms && p.platforms[0]) || 'facebook';
+      const platInfo = PLATFORMS[primaryPlatformId] || PLATFORMS.facebook;
+      const statusInfo = POST_STATUSES[p.status] || POST_STATUSES.scheduled;
+      const assigneeNames = (p.assignees || []).map(id => store.getMemberById(id)?.name || id).join(', ');
 
-      const d = new Date(dateStr + 'T00:00:00');
-      const daysOfWeek = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-      const dayName = daysOfWeek[d.getDay()];
-      const formattedDate = `${dayName}, ngày ${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
-
-      let itemsHtml = '';
-      grouped[dateStr].forEach(evt => {
-        const cat = CATEGORIES[evt.category] || CATEGORIES.hop;
-        const priorityLabels = { high: 'Khẩn cấp', medium: 'Quan trọng', low: 'Bình thường' };
-
-        // Tên những người phụ trách
-        const assigneeNames = (evt.assignees || []).map(id => {
-          const m = store.getMemberById(id);
-          return m ? m.name : id;
-        }).join(', ');
-
-        itemsHtml += `
-          <div class="agenda-item" data-id="${evt.id}">
-            <div class="agenda-time">
-              <span>🕒</span> ${evt.startTime} - ${evt.endTime}
-            </div>
-            <div class="agenda-details">
-              <div class="agenda-title">
-                <span>${evt.title}</span>
-                <span class="badge ${cat.badgeClass}">${cat.name}</span>
-                <span class="badge priority-${evt.priority}">${priorityLabels[evt.priority] || ''}</span>
-              </div>
-              <div class="agenda-desc">
-                📍 <strong>Địa điểm:</strong> ${evt.location || 'Chưa ghi rõ'} &nbsp;|&nbsp; 
-                👤 <strong>Phụ trách:</strong> ${assigneeNames || 'Tất cả'}
-              </div>
-              ${evt.note ? `<div class="agenda-desc" style="margin-top: 0.25rem; color: #475569;">📝 <em>${evt.note}</em></div>` : ''}
-            </div>
-            <div style="display: flex; gap: 0.4rem;">
-              <button class="btn btn-secondary btn-icon btn-share-evt" title="Soạn thông báo gửi Zalo/Email" data-id="${evt.id}">
-                📤
-              </button>
-              <button class="btn btn-secondary btn-icon btn-edit-evt" title="Chỉnh sửa lịch" data-id="${evt.id}">
-                ✏️
-              </button>
-            </div>
+      row.innerHTML = `
+        <div style="min-width: 110px;">
+          <span class="card-channel-tag" style="background: ${platInfo.bg}; color: ${platInfo.color};">
+            ${platInfo.name}
+          </span>
+          <div style="font-size: 11px; font-weight: 700; color: var(--text-main); margin-top: 4px;">
+            ${p.date} - ${p.time}
           </div>
-        `;
-      });
-
-      groupEl.innerHTML = `
-        <div class="agenda-date-header">
-          <span>${formattedDate}</span>
-          <span style="font-size: 0.78rem; font-weight: 500; color: var(--text-muted);">${grouped[dateStr].length} sự kiện</span>
         </div>
-        <div class="agenda-list">${itemsHtml}</div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-size: 13px; font-weight: 600; color: var(--text-main);">${p.title}</div>
+          <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            ${p.content}
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">
+            Phụ trách: <strong>${assigneeNames}</strong> &bull; Trạng thái: <span style="color: ${statusInfo.color}; font-weight: 600;">${statusInfo.name}</span>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-sprout-secondary btn-remind-row" data-id="${p.id}" style="padding: 4px 8px; font-size: 11px;">Nhắc việc</button>
+          <button class="btn-sprout-secondary btn-edit-row" data-id="${p.id}" style="padding: 4px 8px; font-size: 11px;">Chỉnh sửa</button>
+        </div>
       `;
 
-      agendaViewContainer.appendChild(groupEl);
+      row.querySelector('.btn-edit-row').addEventListener('click', () => openComposeDrawer(p.id));
+      row.querySelector('.btn-remind-row').addEventListener('click', () => openRemindModal(p.id));
+
+      tableCard.appendChild(row);
     });
 
-    // Gắn sự kiện cho các nút trong agenda view
-    agendaViewContainer.querySelectorAll('.btn-edit-evt').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openEditEventModal(btn.dataset.id);
-      });
-    });
-
-    agendaViewContainer.querySelectorAll('.btn-share-evt').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openShareModal(btn.dataset.id);
-      });
-    });
+    tableView.appendChild(tableCard);
   }
 
-  // --- Modal: Thêm / Sửa Lịch Trình ---
-  function openCreateEventModal(defaultDate = null) {
-    state.editingEventId = null;
-    modalTitle.textContent = 'Thêm Lịch Trình Mới';
-    deleteEventBtn.style.display = 'none';
-    eventForm.reset();
+  // --- 6. COMPOSE DRAWER ---
+  function openComposeDrawer(postId = null, defaultDate = null) {
+    state.editingPostId = postId;
+    composeForm.reset();
 
-    const todayStr = defaultDate || new Date().toISOString().split('T')[0];
-    document.getElementById('event-start-date').value = todayStr;
-    document.getElementById('event-end-date').value = todayStr;
-    document.getElementById('event-start-time').value = '09:00';
-    document.getElementById('event-end-time').value = '10:00';
+    renderProfilePills();
+    renderAssigneeSelect();
 
-    // Đánh dấu chọn người phụ trách mặc định theo người đang lọc
-    renderMemberChips(state.selectedMemberId !== 'all' ? [state.selectedMemberId] : []);
-    eventModal.classList.add('active');
-  }
+    if (postId) {
+      const p = store.getPostById(postId);
+      if (!p) return;
+      composeTitle.textContent = 'Chỉnh Sửa Bài Viết';
+      document.getElementById('compose-title-input').value = p.title || '';
+      composeTextarea.value = p.content || '';
+      composeDateInput.value = p.date || '';
+      composeTimeInput.value = p.time || '12:00';
+      composeImageInput.value = p.image || '';
+      composeNoteInput.value = p.note || '';
+      document.getElementById('compose-status').value = p.status || 'scheduled';
 
-  function openEditEventModal(eventId) {
-    const evt = store.getEventById(eventId);
-    if (!evt) return;
-
-    state.editingEventId = eventId;
-    modalTitle.textContent = 'Chỉnh Sửa Lịch Trình';
-    deleteEventBtn.style.display = 'inline-flex';
-
-    document.getElementById('event-title').value = evt.title;
-    document.getElementById('event-category').value = evt.category;
-    document.getElementById('event-priority').value = evt.priority;
-    document.getElementById('event-start-date').value = evt.startDate;
-    document.getElementById('event-start-time').value = evt.startTime;
-    document.getElementById('event-end-date').value = evt.endDate;
-    document.getElementById('event-end-time').value = evt.endTime;
-    document.getElementById('event-location').value = evt.location || '';
-    document.getElementById('event-note').value = evt.note || '';
-
-    renderMemberChips(evt.assignees || []);
-    eventModal.classList.add('active');
-  }
-
-  function renderMemberChips(selectedIds = []) {
-    memberChipsContainer.innerHTML = '';
-    const members = store.getMembers().filter(m => m.id !== 'all');
-
-    members.forEach(m => {
-      const chip = document.createElement('div');
-      const isSelected = selectedIds.includes(m.id);
-      chip.className = `member-chip ${isSelected ? 'selected' : ''}`;
-      chip.dataset.id = m.id;
-      chip.innerHTML = `<span>${m.avatar || '👤'}</span> <span>${m.name}</span>`;
-
-      chip.addEventListener('click', () => {
-        chip.classList.toggle('selected');
-      });
-
-      memberChipsContainer.appendChild(chip);
-    });
-  }
-
-  function getSelectedAssigneeIds() {
-    const selectedChips = memberChipsContainer.querySelectorAll('.member-chip.selected');
-    const ids = Array.from(selectedChips).map(c => c.dataset.id);
-    // Nếu không chọn ai, coi như toàn bộ nhân sự
-    if (ids.length === 0) {
-      return store.getMembers().filter(m => m.id !== 'all').map(m => m.id);
+      if (p.platforms && p.platforms.length > 0) {
+        profilePillsWrap.querySelectorAll('.profile-pill-item').forEach(pill => {
+          pill.classList.toggle('selected', p.platforms.includes(pill.dataset.id));
+        });
+      }
+      if (p.assignees && p.assignees.length > 0) {
+        composeAssigneeSelect.value = p.assignees[0];
+      }
+    } else {
+      composeTitle.textContent = 'Soạn Bài Viết Mới (New Post)';
+      const todayStr = defaultDate || new Date().toISOString().split('T')[0];
+      composeDateInput.value = todayStr;
+      composeTimeInput.value = '11:15';
+      document.getElementById('compose-status').value = 'scheduled';
+      const firstPill = profilePillsWrap.querySelector('[data-id="facebook"]');
+      if (firstPill) firstPill.classList.add('selected');
     }
+
+    updateCharCount();
+    composeOverlay.classList.add('active');
+  }
+
+  function closeComposeDrawer() {
+    composeOverlay.classList.remove('active');
+  }
+
+  function renderProfilePills() {
+    profilePillsWrap.innerHTML = '';
+    Object.values(PLATFORMS).forEach(plat => {
+      const pill = document.createElement('div');
+      pill.className = 'profile-pill-item';
+      pill.dataset.id = plat.id;
+      pill.textContent = `${plat.name} @taythi`;
+      pill.addEventListener('click', () => {
+        pill.classList.toggle('selected');
+      });
+      profilePillsWrap.appendChild(pill);
+    });
+  }
+
+  function getSelectedPlatforms() {
+    const selected = profilePillsWrap.querySelectorAll('.profile-pill-item.selected');
+    const ids = Array.from(selected).map(p => p.dataset.id);
+    if (ids.length === 0) return ['facebook'];
     return ids;
   }
 
-  // --- Modal Thông Báo / Chia Sẻ Qua Zalo/Email ---
-  function openShareModal(eventId) {
-    const evt = store.getEventById(eventId);
-    if (!evt) return;
-
-    const cat = CATEGORIES[evt.category] || CATEGORIES.hop;
-    const priorityLabels = { high: '🔴 Khẩn cấp', medium: '🟡 Quan trọng', low: '🟢 Bình thường' };
-    const assigneeNames = (evt.assignees || []).map(id => {
-      const m = store.getMemberById(id);
-      return m ? `${m.name} (${m.role})` : id;
-    }).join('\n- ');
-
-    const messageTemplate = `📢 [THÔNG BÁO LỊCH TRÌNH NỘI BỘ]
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📌 Sự kiện: ${evt.title.toUpperCase()}
-📂 Loại: ${cat.name}
-⚡ Mức độ: ${priorityLabels[evt.priority] || 'Bình thường'}
-🕒 Thời gian: ${evt.startTime} - ${evt.endTime} (Ngày ${evt.startDate})
-📍 Địa điểm: ${evt.location || 'Tại văn phòng'}
-👥 Thành phần tham dự:
-- ${assigneeNames}
-📝 Nội dung chi tiết:
-${evt.note || 'Không có ghi chú thêm.'}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-👉 Đề nghị các anh/chị sắp xếp công việc tham gia đúng giờ!`;
-
-    shareContentBox.textContent = messageTemplate;
-    shareModal.classList.add('active');
-  }
-
-  // --- Trung tâm thông báo (Notification Center) ---
-  function updateNotificationBadge() {
-    const notifs = store.getNotificationsForMember(state.selectedMemberId);
-    notificationCountBadge.textContent = notifs.length;
-    notificationCountBadge.style.display = notifs.length > 0 ? 'inline-block' : 'none';
-
-    notifListEl.innerHTML = '';
-    if (notifs.length === 0) {
-      notifListEl.innerHTML = `
-        <div style="padding: 2rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
-          🎉 Không có lịch trình sắp tới nào!
-        </div>
-      `;
-      return;
-    }
-
-    notifs.forEach(n => {
-      const item = document.createElement('div');
-      item.className = 'notif-item';
-      item.innerHTML = `
-        <div class="notif-icon">🔔</div>
-        <div class="notif-content">
-          <div class="notif-msg">${n.title}</div>
-          <div class="notif-sub">🕒 ${n.time} | Ngày ${n.date}</div>
-          <div class="notif-sub">📍 ${n.location}</div>
-          <div class="notif-sub">👥 ${n.assignees}</div>
-          <div class="notif-actions">
-            <button class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;" onclick="window.viewEventFromNotif('${n.eventId}')">
-              Xem chi tiết
-            </button>
-            <button class="btn btn-primary" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;" onclick="window.shareEventFromNotif('${n.eventId}')">
-              Gửi thông báo
-            </button>
-          </div>
-        </div>
-      `;
-      notifListEl.appendChild(item);
+  function renderAssigneeSelect() {
+    composeAssigneeSelect.innerHTML = '';
+    const members = store.getMembers().filter(m => m.id !== 'all');
+    members.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = `${m.name} (${m.role})`;
+      composeAssigneeSelect.appendChild(opt);
     });
   }
 
-  window.viewEventFromNotif = function(eventId) {
-    notifPanel.classList.remove('active');
-    openEditEventModal(eventId);
-  };
+  function updateCharCount() {
+    const len = composeTextarea.value.length;
+    charCounter.textContent = `${len} ký tự`;
+  }
 
-  window.shareEventFromNotif = function(eventId) {
-    notifPanel.classList.remove('active');
-    openShareModal(eventId);
-  };
+  function openRemindModal(postId) {
+    const p = store.getPostById(postId);
+    if (!p) return;
 
-  // Toast Notification
+    const plat = PLATFORMS[p.platforms[0]] || PLATFORMS.facebook;
+    const status = POST_STATUSES[p.status] || POST_STATUSES.scheduled;
+    const assignees = (p.assignees || []).map(id => store.getMemberById(id)?.name || id).join(', ');
+
+    const text = `[THONG BAO LICH DANG BAI - TEAM NGUYEN THI TAY THI]
+------------------------------------------------------------
+Tieu de: ${p.title.toUpperCase()}
+Kenh xuat ban: ${plat.name}
+Thoi gian dang: ${p.time} ngay ${p.date}
+Trang thai: ${status.name}
+Nhan su phu trach: ${assignees}
+
+Noi dung:
+${p.content || 'Xem chi tiet tai he thong'}
+
+Ghi chu:
+${p.note || 'Khong co ghi chu'}
+------------------------------------------------------------
+De nghi cac thanh vien lien quan hoan thanh dung tien do!`;
+
+    remindTextBox.textContent = text;
+    remindModal.classList.add('active');
+  }
+
   function showToast(msg) {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.innerHTML = `<span>✅</span> <span>${msg}</span>`;
-    container.appendChild(toast);
+    const container = document.getElementById('toast-box');
+    const t = document.createElement('div');
+    t.className = 'sprout-toast';
+    t.textContent = msg;
+    container.appendChild(t);
     setTimeout(() => {
-      toast.style.opacity = '0';
-      toast.style.transition = 'opacity 0.3s';
-      setTimeout(() => toast.remove(), 300);
-    }, 3000);
+      t.style.opacity = '0';
+      t.style.transition = 'opacity 0.2s';
+      setTimeout(() => t.remove(), 200);
+    }, 2600);
   }
 
-  // --- Event Listeners ---
+  // --- BIND EVENTS ---
   function bindEvents() {
-    // Chuyển view Calendar / Agenda
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        state.viewMode = btn.dataset.view;
-        renderView();
+    // Sidebar view switching
+    sidebarItems.forEach(item => {
+      item.addEventListener('click', () => {
+        sidebarItems.forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        state.currentView = item.dataset.view;
+        renderCurrentView();
       });
     });
 
-    // Điều hướng ngày tháng
-    document.getElementById('btn-prev-month').addEventListener('click', () => {
-      state.currentDate.setMonth(state.currentDate.getMonth() - 1);
-      renderView();
+    // Week / Month Mode Toggle
+    btnModeWeek.addEventListener('click', () => {
+      btnModeWeek.classList.add('active');
+      btnModeMonth.classList.remove('active');
+      state.calendarMode = 'week';
+      renderCurrentView();
     });
-    document.getElementById('btn-next-month').addEventListener('click', () => {
-      state.currentDate.setMonth(state.currentDate.getMonth() + 1);
-      renderView();
+
+    btnModeMonth.addEventListener('click', () => {
+      btnModeMonth.classList.add('active');
+      btnModeWeek.classList.remove('active');
+      state.calendarMode = 'month';
+      renderCurrentView();
     });
-    document.getElementById('btn-today').addEventListener('click', () => {
+
+    // Date Navigation
+    document.getElementById('btn-nav-prev').addEventListener('click', () => {
+      if (state.calendarMode === 'week') {
+        state.weekStartDate.setDate(state.weekStartDate.getDate() - 7);
+      } else {
+        state.currentDate.setMonth(state.currentDate.getMonth() - 1);
+      }
+      renderCurrentView();
+    });
+
+    document.getElementById('btn-nav-next').addEventListener('click', () => {
+      if (state.calendarMode === 'week') {
+        state.weekStartDate.setDate(state.weekStartDate.getDate() + 7);
+      } else {
+        state.currentDate.setMonth(state.currentDate.getMonth() + 1);
+      }
+      renderCurrentView();
+    });
+
+    document.getElementById('btn-nav-today').addEventListener('click', () => {
       state.currentDate = new Date();
-      renderView();
+      state.weekStartDate = getMonday(new Date());
+      renderCurrentView();
     });
 
-    // Tìm kiếm
-    searchInput.addEventListener('input', (e) => {
-      state.searchKeyword = e.target.value;
-      renderView();
-    });
+    // Compose Actions
+    document.getElementById('btn-open-compose').addEventListener('click', () => openComposeDrawer());
+    document.getElementById('btn-close-compose').addEventListener('click', closeComposeDrawer);
+    document.getElementById('btn-cancel-compose').addEventListener('click', closeComposeDrawer);
 
-    // Nút mở modal thêm lịch
-    document.getElementById('btn-add-schedule').addEventListener('click', () => {
-      openCreateEventModal();
-    });
+    composeTextarea.addEventListener('input', updateCharCount);
 
-    // Đóng modal
-    document.querySelectorAll('.btn-close-modal').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+    document.querySelectorAll('.optimal-item-row').forEach(row => {
+      row.addEventListener('click', () => {
+        composeTimeInput.value = row.dataset.time;
+        showToast(`Đã áp dụng khung giờ vàng: ${row.dataset.time}`);
       });
     });
 
-    // Submit form thêm / sửa lịch
-    eventForm.addEventListener('submit', (e) => {
+    composeForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const eventData = {
-        title: document.getElementById('event-title').value.trim(),
-        category: document.getElementById('event-category').value,
-        priority: document.getElementById('event-priority').value,
-        startDate: document.getElementById('event-start-date').value,
-        startTime: document.getElementById('event-start-time').value,
-        endDate: document.getElementById('event-end-date').value,
-        endTime: document.getElementById('event-end-time').value,
-        location: document.getElementById('event-location').value.trim(),
-        note: document.getElementById('event-note').value.trim(),
-        assignees: getSelectedAssigneeIds()
+      const title = document.getElementById('compose-title-input').value.trim();
+      const content = composeTextarea.value.trim();
+      const date = composeDateInput.value;
+      const time = composeTimeInput.value;
+      const status = document.getElementById('compose-status').value;
+      const image = composeImageInput.value.trim();
+      const note = composeNoteInput.value.trim();
+      const platforms = getSelectedPlatforms();
+      const assignees = [composeAssigneeSelect.value];
+
+      const data = {
+        title: title || content.slice(0, 40) + '...',
+        content,
+        date,
+        time,
+        status,
+        image,
+        note,
+        platforms,
+        assignees
       };
 
-      if (state.editingEventId) {
-        store.updateEvent(state.editingEventId, eventData);
-        showToast('Đã cập nhật lịch trình thành công!');
+      if (state.editingPostId) {
+        store.updatePost(state.editingPostId, data);
+        showToast('Đã cập nhật bài viết thành công!');
       } else {
-        store.addEvent(eventData);
-        showToast('Đã tạo lịch trình mới thành công!');
+        store.addPost(data);
+        showToast('Đã lên lịch bài viết mới!');
       }
 
-      eventModal.classList.remove('active');
-      renderMembersSidebar();
-      renderView();
-      updateNotificationBadge();
+      closeComposeDrawer();
+      renderCurrentView();
     });
 
-    // Xóa lịch trình
-    deleteEventBtn.addEventListener('click', () => {
-      if (state.editingEventId && confirm('Bạn có chắc chắn muốn xóa lịch trình này không?')) {
-        store.deleteEvent(state.editingEventId);
-        eventModal.classList.remove('active');
-        showToast('Đã xóa lịch trình!');
-        renderMembersSidebar();
-        renderView();
-        updateNotificationBadge();
-      }
+    document.getElementById('btn-save-draft').addEventListener('click', () => {
+      document.getElementById('compose-status').value = 'draft';
+      composeForm.dispatchEvent(new Event('submit'));
     });
 
-    // Mở / Đóng bảng thông báo
-    document.getElementById('btn-notification-bell').addEventListener('click', (e) => {
-      e.stopPropagation();
-      notifPanel.classList.toggle('active');
-    });
-
-    document.addEventListener('click', (e) => {
-      if (!notifPanel.contains(e.target) && e.target.id !== 'btn-notification-bell') {
-        notifPanel.classList.remove('active');
-      }
-    });
-
-    // Copy nội dung thông báo
-    document.getElementById('btn-copy-share').addEventListener('click', () => {
-      const text = shareContentBox.textContent;
-      navigator.clipboard.writeText(text).then(() => {
-        showToast('Đã copy nội dung thông báo vào bộ nhớ tạm!');
-      }).catch(() => {
-        showToast('Vui lòng chọn và copy nội dung bằng phím tắt Ctrl+C');
+    // Search bar
+    const searchInput = document.getElementById('search-posts-input');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        state.searchKeyword = e.target.value;
+        renderCurrentView();
       });
-    });
+    }
 
-    // Nút thông báo Web Notification của trình duyệt
-    document.getElementById('btn-request-web-notif').addEventListener('click', () => {
-      if (!('Notification' in window)) {
-        alert('Trình duyệt này không hỗ trợ Web Notification.');
-        return;
-      }
-      Notification.requestPermission().then(permission => {
-        if (permission === 'granted') {
-          showToast('Đã bật quyền thông báo trình duyệt!');
-          new Notification('Hệ Thống Lịch Nội Bộ', {
-            body: 'Tính năng thông báo lịch trình đã sẵn sàng hoạt động!',
-            icon: 'favicon.ico'
-          });
-        } else {
-          alert('Quyền thông báo bị từ chối.');
-        }
-      });
-    });
-
-    // Quản lý Nhân sự Modal
-    document.getElementById('btn-manage-members').addEventListener('click', () => {
-      renderManageMembersTable();
-      memberManageModal.classList.add('active');
-    });
-
-    document.getElementById('member-form').addEventListener('submit', (e) => {
+    // Contact Config Form
+    document.getElementById('form-contact-config').addEventListener('submit', (e) => {
       e.preventDefault();
-      const name = document.getElementById('new-member-name').value.trim();
-      const role = document.getElementById('new-member-role').value.trim();
-      const email = document.getElementById('new-member-email').value.trim();
-      const phone = document.getElementById('new-member-phone').value.trim();
+      if (state.editingContactKey) {
+        const val = contactConfigInput.value.trim() || 'Chưa thiết lập';
+        store.updateContact(state.editingContactKey, val);
+        contactConfigModal.classList.remove('active');
+        renderBrandAndContacts();
+        showToast('Đã lưu cấu hình kênh liên hệ!');
+      }
+    });
+
+    document.getElementById('btn-close-contact-config').addEventListener('click', () => {
+      contactConfigModal.classList.remove('active');
+    });
+
+    // Member Form (Add & Edit)
+    document.getElementById('btn-open-add-member').addEventListener('click', () => {
+      openEditMemberModal();
+    });
+
+    document.getElementById('btn-close-member-modal').addEventListener('click', () => {
+      memberModal.classList.remove('active');
+    });
+
+    memberForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = inputMemberName.value.trim();
+      const role = inputMemberRole.value.trim();
+      const phone = inputMemberPhone.value.trim();
+      const email = inputMemberEmail.value.trim();
+      const dob = inputMemberDob.value;
 
       if (!name) return;
-
-      const colors = ['#3b82f6', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ef4444'];
-      const randomColor = colors[Math.floor(Math.random() * colors.length)];
       const words = name.split(' ');
-      const avatar = words.length > 1 
-        ? (words[0][0] + words[words.length - 1][0]).toUpperCase()
-        : name.substr(0, 2).toUpperCase();
+      const code = words.length > 1 ? (words[0][0] + words[words.length - 1][0]).toUpperCase() : name.slice(0, 2).toUpperCase();
 
-      store.addMember({
+      const memberData = {
         name,
-        role: role || 'Thành viên',
-        email,
+        role: role || 'Cộng sự',
         phone,
-        color: randomColor,
-        avatar
-      });
+        email,
+        dob,
+        code
+      };
 
-      document.getElementById('member-form').reset();
-      renderManageMembersTable();
-      renderMembersSidebar();
-      showToast(`Đã thêm nhân sự: ${name}`);
+      if (state.editingMemberId) {
+        store.updateMember(state.editingMemberId, memberData);
+        showToast(`Đã cập nhật nhân sự: ${name}`);
+      } else {
+        memberData.color = '#0073e6';
+        store.addMember(memberData);
+        showToast(`Đã thêm nhân sự: ${name}`);
+      }
+
+      memberModal.classList.remove('active');
+      renderMembersManagement();
+      renderMemberFilterBar();
     });
 
-    // Export Data JSON
-    document.getElementById('btn-export-data').addEventListener('click', () => {
+    // Remind Modal Copy
+    document.getElementById('btn-copy-remind').addEventListener('click', () => {
+      navigator.clipboard.writeText(remindTextBox.textContent).then(() => {
+        showToast('Đã sao chép nội dung thông báo vào bộ nhớ tạm!');
+      }).catch(() => {
+        showToast('Vui lòng chọn văn bản và bấm Ctrl+C');
+      });
+    });
+    document.getElementById('btn-close-remind').addEventListener('click', () => {
+      remindModal.classList.remove('active');
+    });
+
+    // Backup & Restore
+    document.getElementById('btn-export-json').addEventListener('click', () => {
       const json = store.exportData();
       const blob = new Blob([json], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Lich_Noi_Bo_Backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `Sprout_TayThi_Full_${new Date().toISOString().split('T')[0]}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      showToast('Đã tải xuống file sao lưu dữ liệu!');
+      showToast('Đã xuất file sao lưu dữ liệu toàn bộ!');
     });
 
-    // Import Data JSON
-    document.getElementById('input-import-file').addEventListener('change', (e) => {
+    document.getElementById('input-import-json').addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
       reader.onload = (event) => {
-        const success = store.importData(event.target.result);
-        if (success) {
-          showToast('Khôi phục dữ liệu thành công!');
-          renderMembersSidebar();
-          renderView();
-          updateNotificationBadge();
+        const ok = store.importData(event.target.result);
+        if (ok) {
+          showToast('Khôi phục dữ liệu thành công 100%!');
+          renderCurrentView();
+          renderMemberFilterBar();
         } else {
-          alert('File không hợp lệ hoặc sai định dạng!');
+          alert('Tệp dữ liệu không hợp lệ!');
         }
       };
       reader.readAsText(file);
       e.target.value = '';
-    });
-  }
-
-  function renderManageMembersTable() {
-    const listContainer = document.getElementById('manage-members-list');
-    const members = store.getMembers().filter(m => m.id !== 'all');
-    listContainer.innerHTML = '';
-
-    members.forEach(m => {
-      const row = document.createElement('div');
-      row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid var(--border-light);';
-      row.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 0.6rem;">
-          <div class="member-avatar" style="background: ${m.color || '#3b82f6'};">${m.avatar}</div>
-          <div>
-            <div style="font-weight: 600; font-size: 0.85rem;">${m.name}</div>
-            <div style="font-size: 0.74rem; color: var(--text-muted);">${m.role} &bull; ${m.email || 'Chưa có email'}</div>
-          </div>
-        </div>
-        <button class="btn btn-danger" style="padding: 0.25rem 0.6rem; font-size: 0.72rem;" data-id="${m.id}">Xóa</button>
-      `;
-
-      row.querySelector('button').addEventListener('click', () => {
-        if (confirm(`Bạn có chắc chắn muốn xóa nhân sự "${m.name}" khỏi danh sách?`)) {
-          store.deleteMember(m.id);
-          renderManageMembersTable();
-          renderMembersSidebar();
-          renderView();
-          updateNotificationBadge();
-          showToast(`Đã xóa nhân sự: ${m.name}`);
-        }
-      });
-
-      listContainer.appendChild(row);
     });
   }
 });
