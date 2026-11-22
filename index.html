@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Publishing & Content Management - Nguyễn Thị Tây Thi</title>
+  <title>Kế Hoạch Truyền Thông REBOX - Nguyễn Thị Tây Thi</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -11,42 +11,46 @@
   <div class="sprout-app-shell">
     <!-- 1. Leftmost Minimal Rail -->
     <div class="sprout-nav-rail">
-      <div class="sprout-rail-logo" title="Sprout Publishing System">S</div>
-      <button class="sprout-rail-item active" title="Publishing">PUB</button>
-      <button class="sprout-rail-item" title="Listening & Analytics">ANA</button>
-      <button class="sprout-rail-item" title="Inbox & Messages">MSG</button>
-      <button class="sprout-rail-item" title="Settings & Config">SET</button>
+      <div class="sprout-rail-logo" title="Dự án REBOX - Sống Xanh">R</div>
+      <button class="sprout-rail-item active" title="Kế hoạch đăng bài">PUB</button>
+      <button class="sprout-rail-item" title="Báo cáo & Đo lường">ANA</button>
+      <button class="sprout-rail-item" title="Tin nhắn & Hộp thư">MSG</button>
+      <button class="sprout-rail-item" title="Thiết lập hệ thống">SET</button>
     </div>
 
     <!-- 2. Sprout Sidebar -->
     <aside class="sprout-sidebar">
       <div class="sidebar-brand-header">
-        <div class="brand-company-sub">NGUYỄN THỊ TÂY THI CO.</div>
-        <div class="brand-section-title">Publishing</div>
+        <div class="brand-company-sub">DỰ ÁN REBOX VIỆT NAM</div>
+        <div class="brand-section-title">Kế Hoạch Truyền Thông</div>
       </div>
 
       <div class="sidebar-menu-list">
         <button class="sidebar-menu-item active" data-view="calendar">
-          <span>Calendar</span>
+          <span>Calendar (Lịch Trình)</span>
+        </button>
+        <button class="sidebar-menu-item" data-view="phase1">
+          <span>GĐ 1: Tháng 12/2026</span>
+          <span class="menu-badge" id="badge-phase1">0</span>
+        </button>
+        <button class="sidebar-menu-item" data-view="phase2">
+          <span>GĐ 2: Tháng 01/2027</span>
+          <span class="menu-badge" id="badge-phase2">0</span>
+        </button>
+        <button class="sidebar-menu-item" data-view="phase3">
+          <span>GĐ 3: Tháng 02/2027</span>
+          <span class="menu-badge" id="badge-phase3">0</span>
         </button>
         <button class="sidebar-menu-item" data-view="queue">
-          <span>Sprout Queue</span>
+          <span>Danh Sách Nhiệm Vụ</span>
           <span class="menu-badge" id="badge-queue">0</span>
-        </button>
-        <button class="sidebar-menu-item" data-view="drafts">
-          <span>Drafts</span>
-          <span class="menu-badge" id="badge-drafts">0</span>
-        </button>
-        <button class="sidebar-menu-item" data-view="needs_approval">
-          <span>Needs Approval</span>
-          <span class="menu-badge" id="badge-approval">0</span>
         </button>
         <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 6px 0;"></div>
         <button class="sidebar-menu-item" data-view="brand">
           <span>Kênh Liên Hệ (15 Kênh)</span>
         </button>
         <button class="sidebar-menu-item" data-view="members">
-          <span>Nhân Sự & Đội Ngũ</span>
+          <span>Đội Ngũ Nhân Sự</span>
         </button>
       </div>
 
@@ -54,7 +58,7 @@
         <div class="user-avatar-badge">TT</div>
         <div>
           <div class="user-meta-name">Nguyễn Thị Tây Thi</div>
-          <div class="user-meta-role">Trưởng nhóm Content</div>
+          <div class="user-meta-role">Trưởng dự án REBOX</div>
         </div>
       </div>
     </aside>
@@ -66,10 +70,10 @@
         <div class="topbar-left">
           <div class="date-nav-group">
             <button class="date-nav-btn" id="btn-nav-prev">&lt;</button>
-            <button class="date-nav-btn" id="btn-nav-today">Hôm nay</button>
+            <button class="date-nav-btn" id="btn-nav-today">Mốc T12/2026</button>
             <button class="date-nav-btn" id="btn-nav-next">&gt;</button>
           </div>
-          <div class="current-period-display" id="period-display">Tuần này</div>
+          <div class="current-period-display" id="period-display">Tháng 12 / 2026</div>
 
           <!-- Nút chuyển đổi kiểu ô lưới Lịch Tuần & Lịch Tháng -->
           <div class="view-mode-toggle">
@@ -80,7 +84,7 @@
 
         <div class="topbar-right">
           <div class="search-input-box">
-            <input type="text" id="search-posts-input" placeholder="Tìm kiếm bài viết...">
+            <input type="text" id="search-posts-input" placeholder="Tìm kiếm bài viết, KPI...">
           </div>
 
           <button class="btn-sprout-secondary" id="btn-export-json" title="Xuất file sao lưu">Xuất dữ liệu</button>
@@ -103,9 +107,9 @@
         </div>
       </div>
 
-      <!-- Filter Strip by Assignee -->
+      <!-- Filter Strip by Assignee & Phase Jump -->
       <div class="sub-filter-strip" id="member-filter-strip">
-        <!-- Render filter chips -->
+        <!-- Render filter chips & phase jump buttons -->
       </div>
 
       <!-- VIEW A: MAIN CALENDAR CONTAINER (LƯỚI Ô VUÔNG VỪA VẶN MÀN HÌNH) -->
@@ -132,7 +136,7 @@
         </div>
       </div>
 
-      <!-- VIEW B: TABLE VIEW (Cho các tab Queue, Drafts, Needs Approval) -->
+      <!-- VIEW B: TABLE VIEW (Cho danh sách toàn bộ nhiệm vụ hoặc giai đoạn) -->
       <div class="sprout-table-view" id="table-view" style="display: none;">
         <!-- Render table rows -->
       </div>
@@ -143,14 +147,14 @@
           <div style="display: flex; align-items: center; justify-content: space-between;">
             <div>
               <div style="font-size: 14px; font-weight: 700; color: var(--text-main);">
-                Lưới 15 Kênh Liên Hệ Chính Thức & Nhận Diện Thương Hiệu
+                Lưới 15 Kênh Liên Hệ Chính Thức - Dự Án REBOX
               </div>
               <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">
-                Quản lý địa chỉ, hotline, mạng xã hội và kênh truyền thông chính thức. Bấm nút <strong>Cấu hình</strong> ở bất kỳ mục nào để sửa và lưu ngay lập tức.
+                Quản lý địa chỉ trạm, hotline, fanpage và kênh truyền thông chính thức của dự án REBOX. Bấm nút <strong>Cấu hình</strong> ở bất kỳ mục nào để sửa và lưu ngay lập tức.
               </div>
             </div>
             <span style="font-size: 11px; background: #e0f2fe; color: #0284c7; padding: 4px 8px; border-radius: 4px; font-weight: 600;">
-              Lù Noodle Official
+              REBOX - Sống Xanh UED
             </span>
           </div>
 
@@ -166,10 +170,10 @@
         <div class="table-card" style="padding: 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
           <div>
             <div style="font-size: 14px; font-weight: 700; color: var(--text-main);">
-              Danh Sách Đội Ngũ Nhân Sự & Cộng Sự
+              Đội Ngũ Nhân Sự Truyền Thông Dự Án REBOX
             </div>
             <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">
-              Quản lý chi tiết Họ tên, Chức vụ, Số điện thoại, Email nội bộ và Ngày tháng năm sinh.
+              Danh sách thành viên nòng cốt phụ trách Content, Thiết kế Key Visual và Sản xuất Media.
             </div>
           </div>
           <button class="btn-sprout-primary" id="btn-open-add-member">
@@ -201,7 +205,7 @@
         Cấu hình thông tin
       </div>
       <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 14px;">
-        Nhập nội dung mới hoặc đường dẫn liên kết (Link). Thông tin sẽ được lưu trực tiếp vào hệ thống:
+        Nhập nội dung mới hoặc đường dẫn liên kết. Thông tin sẽ được lưu trực tiếp vào hệ thống:
       </div>
       <form id="form-contact-config">
         <div class="sprout-form-group" style="margin-bottom: 16px;">
@@ -230,7 +234,7 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
           <div class="sprout-form-group">
             <label class="sprout-form-label">Vai trò / Chuyên môn *</label>
-            <input type="text" class="sprout-form-input" id="modal-member-role" placeholder="Ví dụ: Trưởng nhóm, Designer..." required>
+            <input type="text" class="sprout-form-input" id="modal-member-role" placeholder="Ví dụ: Trưởng dự án, Designer..." required>
           </div>
           <div class="sprout-form-group">
             <label class="sprout-form-label">Ngày tháng năm sinh</label>
@@ -244,8 +248,8 @@
             <input type="text" class="sprout-form-input" id="modal-member-phone" placeholder="09xxxxxxxx">
           </div>
           <div class="sprout-form-group">
-            <label class="sprout-form-label">Email nội bộ</label>
-            <input type="email" class="sprout-form-input" id="modal-member-email" placeholder="ten@lùnoodle.vn">
+            <label class="sprout-form-label">Email liên hệ</label>
+            <input type="email" class="sprout-form-input" id="modal-member-email" placeholder="email@gmail.com">
           </div>
         </div>
 
@@ -275,12 +279,17 @@
           </div>
 
           <div class="sprout-form-group">
-            <label class="sprout-form-label">Tiêu đề bài viết / Chủ đề nội dung</label>
-            <input type="text" class="sprout-form-input" id="compose-title-input" placeholder="Ví dụ: Thực đơn cà phê mùa đông..." required>
+            <label class="sprout-form-label">Tiêu đề bài viết / Hoạt động *</label>
+            <input type="text" class="sprout-form-input" id="compose-title-input" placeholder="Ví dụ: REBOX ra mắt sản phẩm..." required>
           </div>
 
           <div class="sprout-form-group">
-            <label class="sprout-form-label">Nội dung bài viết (Post text)</label>
+            <label class="sprout-form-label">Định dạng & Hình thức triển khai</label>
+            <input type="text" class="sprout-form-input" id="compose-format-input" placeholder="Ví dụ: Bài viết, Video ngắn, Infographic, Poster...">
+          </div>
+
+          <div class="sprout-form-group">
+            <label class="sprout-form-label">Nội dung chi tiết / Thông điệp / CTA</label>
             <div class="compose-textarea-box">
               <textarea class="compose-textarea" id="compose-textarea" placeholder="Nhập nội dung bài đăng, thông điệp truyền thông, hashtag..."></textarea>
               <div class="textarea-bottom-toolbar">
@@ -291,7 +300,7 @@
           </div>
 
           <div class="sprout-form-group">
-            <label class="sprout-form-label">Cộng sự phụ trách thực hiện</label>
+            <label class="sprout-form-label">Thành viên phụ trách chính</label>
             <select class="sprout-form-select" id="compose-assignee">
               <!-- Render member options -->
             </select>
@@ -313,12 +322,12 @@
               <span>Gợi ý khung giờ vàng tương tác cao (Optimal Send Times)</span>
             </div>
             <div class="optimal-items-list">
-              <div class="optimal-item-row" data-time="08:30">
-                <strong>8:30 AM (Buổi sáng)</strong>
-                <span style="color: #64748b;">Mức độ tương tác: Cao</span>
+              <div class="optimal-item-row" data-time="09:00">
+                <strong>9:00 AM (Đầu giờ sáng)</strong>
+                <span style="color: #64748b;">Tương tác cao</span>
               </div>
               <div class="optimal-item-row" data-time="11:15">
-                <strong>11:15 AM (Trước giờ ăn trưa)</strong>
+                <strong>11:15 AM (Giờ ăn trưa sinh viên)</strong>
                 <span style="color: var(--sprout-teal); font-weight: 700;">Tối ưu nhất</span>
               </div>
               <div class="optimal-item-row" data-time="14:30">
@@ -326,7 +335,7 @@
                 <span style="color: #64748b;">Mức độ tương tác: Khá</span>
               </div>
               <div class="optimal-item-row" data-time="19:45">
-                <strong>7:45 PM (Giờ vàng tối)</strong>
+                <strong>7:45 PM (Giờ lướt mạng buổi tối)</strong>
                 <span style="color: var(--sprout-teal); font-weight: 700;">Tối ưu nhất</span>
               </div>
             </div>
@@ -351,8 +360,8 @@
           </div>
 
           <div class="sprout-form-group">
-            <label class="sprout-form-label">Ghi chú & Dàn ý nội dung</label>
-            <input type="text" class="sprout-form-input" id="compose-note" placeholder="Ghi chú nội bộ, link file thiết kế Canva, Google Drive...">
+            <label class="sprout-form-label">Ghi chú / KPI / Kế hoạch chạy Ads</label>
+            <input type="text" class="sprout-form-input" id="compose-note" placeholder="Chạy ads từ ngày nào, mục tiêu tiếp cận, số lượng vé...">
           </div>
         </div>
 
@@ -367,12 +376,12 @@
 
   <!-- REMIND MODAL -->
   <div class="compose-overlay" id="remind-modal">
-    <div class="table-card" style="width: 500px; max-width: 90vw; margin: auto; padding: 20px;">
+    <div class="table-card" style="width: 520px; max-width: 90vw; margin: auto; padding: 20px;">
       <div style="font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">
-        Mẫu Thông Báo Tiến Độ & Deadline
+        Mẫu Thông Báo Phân Công Nhiệm Vụ REBOX
       </div>
       <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 12px;">
-        Văn bản đã được định dạng chuẩn mực cho giao tiếp nội bộ. Bấm Sao Chép để dán vào nhóm Zalo hoặc Email gửi cho cộng sự:
+        Văn bản đã được định dạng chuẩn mực cho giao tiếp nội bộ. Bấm Sao Chép để dán vào nhóm Zalo hoặc Email gửi cho thành viên:
       </div>
       <div style="background: #f8fafc; border: 1px solid var(--sprout-border); border-left: 3px solid var(--sprout-primary); padding: 12px; font-family: monospace; font-size: 11.5px; white-space: pre-wrap; line-height: 1.5; color: #1e293b; margin-bottom: 16px;" id="remind-text-box"></div>
       <div style="display: flex; justify-content: flex-end; gap: 8px;">

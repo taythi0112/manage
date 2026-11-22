@@ -1,18 +1,19 @@
 /**
- * Sprout Social Controller - Content Calendar & Publishing
- * Tích hợp 15 Kênh Liên Hệ có Icon Phù Hợp + Cấu Hình 100%
- * Chi tiết Đội Ngũ Nhân Sự: Tên, SĐT, Email, Ngày sinh, Chức danh
+ * Sprout Social Controller - Content Calendar & Publishing REBOX
+ * Quản lý chiến dịch truyền thông REBOX (Giai đoạn 1, 2, 3)
+ * Đội ngũ: Nguyễn Thị Tây Thi, Mỹ Phạm, Nguyễn Thái Vy, Mai Linh
  */
 
 document.addEventListener('DOMContentLoaded', () => {
   const store = window.sproutStore;
 
   const state = {
-    currentView: 'calendar', // 'calendar', 'queue', 'drafts', 'needs_approval', 'rejected', 'brand', 'members'
+    currentView: 'calendar', // 'calendar', 'queue', 'brand', 'members'
     calendarMode: 'week', // 'week' hoặc 'month'
-    currentDate: new Date(),
-    weekStartDate: getMonday(new Date()),
+    currentDate: new Date('2026-12-01'), // Mặc định mở đầu chiến dịch tháng 12/2026
+    weekStartDate: getMonday(new Date('2026-12-01')),
     selectedMemberId: 'all',
+    selectedPhase: 'all',
     searchKeyword: '',
     editingPostId: null,
     editingContactKey: null,
@@ -28,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return monday;
   }
 
-  // Bộ Icon SVG phù hợp từng nội dung kênh liên hệ (Không dùng icon tùy tiện)
+  // Bộ Icon SVG phù hợp từng nội dung kênh liên hệ
   const CONTACT_SVGS = {
     location: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`,
     phone: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>`,
@@ -97,6 +98,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   init();
 
+  function syncSidebar(viewName) {
+    sidebarItems.forEach(i => {
+      if (i.dataset.view === viewName) {
+        i.classList.add('active');
+      } else {
+        i.classList.remove('active');
+      }
+    });
+  }
+
+  function switchView(viewName) {
+    state.currentView = viewName;
+    syncSidebar(viewName);
+    renderCurrentView();
+  }
+
   function init() {
     renderSidebarCounts();
     renderMemberFilterBar();
@@ -108,12 +125,14 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderSidebarCounts() {
     const stats = store.getStats();
     const badgeQueue = document.getElementById('badge-queue');
-    const badgeDrafts = document.getElementById('badge-drafts');
-    const badgeApproval = document.getElementById('badge-approval');
+    const badgePhase1 = document.getElementById('badge-phase1');
+    const badgePhase2 = document.getElementById('badge-phase2');
+    const badgePhase3 = document.getElementById('badge-phase3');
 
-    if (badgeQueue) badgeQueue.textContent = stats.scheduled;
-    if (badgeDrafts) badgeDrafts.textContent = stats.draft;
-    if (badgeApproval) badgeApproval.textContent = stats.needs_approval;
+    if (badgeQueue) badgeQueue.textContent = stats.total;
+    if (badgePhase1) badgePhase1.textContent = stats.phase1;
+    if (badgePhase2) badgePhase2.textContent = stats.phase2;
+    if (badgePhase3) badgePhase3.textContent = stats.phase3;
   }
 
   function renderMemberFilterBar() {
@@ -127,8 +146,49 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.textContent = `${m.name} (${m.code})`;
       btn.addEventListener('click', () => {
         state.selectedMemberId = m.id;
+        // Nếu người dùng đang ở trang khác (nhân sự, 15 kênh liên hệ...), tự động chuyển về Lịch trình để xem lịch của người đó!
+        if (state.currentView === 'members' || state.currentView === 'brand') {
+          switchView('calendar');
+        } else {
+          renderCurrentView();
+        }
+        renderMemberFilterBar();
+        showToast(m.id === 'all' ? 'Hiển thị lịch của tất cả thành viên' : `Đang lọc lịch của: ${m.name}`);
+      });
+      memberFilterStrip.appendChild(btn);
+    });
+
+    // Thêm các nút chuyển nhanh giai đoạn chiến dịch
+    const phaseDivider = document.createElement('span');
+    phaseDivider.style.cssText = 'border-left: 1px solid var(--sprout-border); height: 16px; margin: 0 4px;';
+    memberFilterStrip.appendChild(phaseDivider);
+
+    const phases = [
+      { id: 'all', label: 'Tất cả giai đoạn', jumpDate: '2026-12-01', sidebarKey: 'calendar' },
+      { id: 'Giai đoạn 1 (T12/2026)', label: 'GĐ 1: Tháng 12/2026', jumpDate: '2026-12-01', sidebarKey: 'phase1' },
+      { id: 'Giai đoạn 2 (T01/2027)', label: 'GĐ 2: Tháng 01/2027', jumpDate: '2027-01-01', sidebarKey: 'phase2' },
+      { id: 'Giai đoạn 3 (T02/2027)', label: 'GĐ 3: Tháng 02/2027', jumpDate: '2027-02-01', sidebarKey: 'phase3' }
+    ];
+
+    phases.forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = `filter-chip ${state.selectedPhase === p.id ? 'active' : ''}`;
+      btn.textContent = p.label;
+      btn.addEventListener('click', () => {
+        state.selectedPhase = p.id;
+        // Nhảy lịch tới đúng tháng của giai đoạn
+        state.currentDate = new Date(p.jumpDate);
+        state.weekStartDate = getMonday(new Date(p.jumpDate));
+
+        // Nếu người dùng đang ở trang khác (nhân sự, thương hiệu...), tự động chuyển về Calendar!
+        if (state.currentView === 'members' || state.currentView === 'brand') {
+          state.currentView = 'calendar';
+        }
+        syncSidebar(p.sidebarKey);
+
         renderMemberFilterBar();
         renderCurrentView();
+        showToast(`Đã chuyển tới: ${p.label}`);
       });
       memberFilterStrip.appendChild(btn);
     });
@@ -150,9 +210,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const pill = document.createElement('div');
       pill.className = `volume-pill ${item.count === 0 ? 'zero' : ''}`;
-      const height = item.count === 0 ? 3 : Math.min(20, 5 + item.count * 4);
+      const height = item.count === 0 ? 3 : Math.min(22, 5 + item.count * 5);
       pill.style.height = `${height}px`;
-      pill.title = `${item.date}: ${item.count} bài`;
+      pill.title = `${item.date}: ${item.count} nhiệm vụ / bài đăng`;
 
       const text = document.createElement('span');
       text.className = 'volume-day-text';
@@ -168,19 +228,17 @@ document.addEventListener('DOMContentLoaded', () => {
     renderSidebarCounts();
     renderVolumeChart();
 
-    let statusFilter = 'all';
-    if (state.currentView === 'queue') statusFilter = 'scheduled';
-    else if (state.currentView === 'drafts') statusFilter = 'draft';
-    else if (state.currentView === 'needs_approval') statusFilter = 'needs_approval';
-    else if (state.currentView === 'rejected') statusFilter = 'rejected';
+    let phaseFilter = state.selectedPhase;
+    if (state.currentView === 'phase1') phaseFilter = 'Giai đoạn 1 (T12/2026)';
+    else if (state.currentView === 'phase2') phaseFilter = 'Giai đoạn 2 (T01/2027)';
+    else if (state.currentView === 'phase3') phaseFilter = 'Giai đoạn 3 (T02/2027)';
 
     const posts = store.filterPosts({
       memberId: state.selectedMemberId,
       keyword: state.searchKeyword,
-      status: statusFilter
+      phase: phaseFilter
     });
 
-    // Hide all
     calendarContainer.style.display = 'none';
     tableView.style.display = 'none';
     brandView.style.display = 'none';
@@ -192,7 +250,11 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (state.currentView === 'members') {
       membersView.style.display = 'block';
       renderMembersManagement();
-    } else if (state.currentView === 'calendar') {
+    } else if (state.currentView === 'queue') {
+      tableView.style.display = 'block';
+      renderTableView(posts);
+    } else {
+      // Cho 'calendar', 'phase1', 'phase2', 'phase3': hiển thị Lịch trình ô lưới
       calendarContainer.style.display = 'flex';
       if (state.calendarMode === 'week') {
         weekGridView.style.display = 'grid';
@@ -203,9 +265,6 @@ document.addEventListener('DOMContentLoaded', () => {
         monthGridView.style.display = 'flex';
         renderMonthGrid(posts);
       }
-    } else {
-      tableView.style.display = 'block';
-      renderTableView(posts);
     }
   }
 
@@ -251,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
     contactConfigModal.classList.add('active');
   }
 
-  // --- 2. RENDER NHÂN SỰ CHI TIẾT (TÊN, SĐT, EMAIL, NGÀY SINH, VAI TRÒ) ---
+  // --- 2. RENDER NHÂN SỰ CHI TIẾT ---
   function renderMembersManagement() {
     const tableBody = document.getElementById('members-table-body');
     if (!tableBody) return;
@@ -267,19 +326,27 @@ document.addEventListener('DOMContentLoaded', () => {
       row.innerHTML = `
         <div>
           <div style="font-weight: 700; color: var(--text-main);">
-            ${m.name} ${isLeader ? '<span style="font-size: 10px; background: #e0f2fe; color: #0284c7; padding: 2px 5px; border-radius: 3px; margin-left: 4px;">Trưởng nhóm</span>' : ''}
+            ${m.name} ${isLeader ? '<span style="font-size: 10px; background: #e0f2fe; color: #0284c7; padding: 2px 5px; border-radius: 3px; margin-left: 4px;">Trưởng dự án</span>' : ''}
           </div>
           <div style="font-size: 11px; color: var(--text-muted);">Mã: ${m.code}</div>
         </div>
         <div>${m.role || 'Chuyên viên'}</div>
-        <div>${m.phone || 'Chưa thiết lập'}</div>
-        <div style="overflow: hidden; text-overflow: ellipsis;">${m.email || 'Chưa thiết lập'}</div>
+        <div><strong>${m.phone || 'Chưa có'}</strong></div>
+        <div style="overflow: hidden; text-overflow: ellipsis;" title="${m.email}">${m.email || 'Chưa có'}</div>
         <div>${m.dob ? formatDateDisplay(m.dob) : 'Chưa thiết lập'}</div>
-        <div style="display: flex; gap: 6px;">
+        <div style="display: flex; gap: 6px; justify-content: flex-end;">
+          <button class="btn-sprout-primary btn-view-member-schedule" data-id="${m.id}" style="padding: 3px 8px; font-size: 11px;" title="Xem các bài đăng phân công cho nhân sự này">Xem lịch trình</button>
           <button class="btn-sprout-secondary btn-edit-member" data-id="${m.id}" style="padding: 3px 6px; font-size: 11px;">Chỉnh sửa</button>
           ${!isLeader ? `<button class="btn-sprout-secondary btn-del-member" data-id="${m.id}" style="padding: 3px 6px; font-size: 11px; color: #dc2626;">Xóa</button>` : ''}
         </div>
       `;
+
+      row.querySelector('.btn-view-member-schedule').addEventListener('click', () => {
+        state.selectedMemberId = m.id;
+        switchView('calendar');
+        renderMemberFilterBar();
+        showToast(`Đang hiển thị lịch trình phân công của: ${m.name}`);
+      });
 
       row.querySelector('.btn-edit-member').addEventListener('click', () => {
         openEditMemberModal(m);
@@ -322,12 +389,12 @@ document.addEventListener('DOMContentLoaded', () => {
       inputMemberDob.value = m.dob || '';
     } else {
       state.editingMemberId = null;
-      memberModalTitle.textContent = 'Thêm Nhân Sự Mới';
+      memberModalTitle.textContent = 'Thêm Nhân Sự Mới Vào Team';
     }
     memberModal.classList.add('active');
   }
 
-  // --- 3. RENDER WEEK GRID ---
+  // --- 3. RENDER WEEK GRID (LƯỚI 7 CỘT KHÔNG BỊ TRÔI NGÀY CHỦ NHẬT) ---
   function renderWeekGrid(posts) {
     if (!weekGridView) return;
     weekGridView.innerHTML = '';
@@ -356,7 +423,7 @@ document.addEventListener('DOMContentLoaded', () => {
       header.className = 'week-col-header';
       header.innerHTML = `
         <div class="week-day-title">${dayNames[i]} ${curDate.getDate()}/${curDate.getMonth() + 1}</div>
-        <button class="btn-add-day-post" data-date="${dateStr}">+ Thêm bài</button>
+        <button class="btn-add-day-post" data-date="${dateStr}">+ Thêm nhiệm vụ</button>
       `;
 
       header.querySelector('.btn-add-day-post').addEventListener('click', () => {
@@ -369,7 +436,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const dayPosts = posts.filter(p => p.date === dateStr).sort((a, b) => a.time.localeCompare(b.time));
 
       if (dayPosts.length === 0) {
-        postsStream.innerHTML = `<div style="text-align: center; color: #94a3b8; font-size: 11px; padding: 20px 0;">Trống</div>`;
+        postsStream.innerHTML = `<div style="text-align: center; color: #94a3b8; font-size: 11px; padding: 20px 0;">Không có bài</div>`;
       } else {
         dayPosts.forEach(p => {
           const card = document.createElement('div');
@@ -387,12 +454,13 @@ document.addEventListener('DOMContentLoaded', () => {
           card.innerHTML = `
             <div class="card-top-meta">
               <span class="card-channel-tag" style="background: ${platInfo.bg}; color: ${platInfo.color};">
-                ${platInfo.code} @taythi
+                ${platInfo.code} ${p.format ? `&bull; ${p.format}` : ''}
               </span>
               <span class="card-time">${p.time}</span>
             </div>
-            <div class="card-content-excerpt">${p.content || p.title}</div>
+            <div class="card-content-excerpt" title="${p.title}"><strong>${p.title}</strong><br>${p.content}</div>
             ${imgHtml}
+            ${p.note ? `<div style="font-size: 10px; color: #64748b; background: #f8fafc; padding: 3px 5px; border-radius: 2px;">Ghi chú: ${p.note}</div>` : ''}
             <div class="card-footer-actions">
               <span class="assignee-initials" title="Phụ trách: ${assigneeCodes}">PT: ${assigneeCodes}</span>
               <div class="action-links">
@@ -488,7 +556,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (dayPosts.length > 3) {
-        capsulesHtml += `<div style="font-size: 9.5px; color: #0073e6; font-weight:700;">+${dayPosts.length - 3} bài nữa</div>`;
+        capsulesHtml += `<div style="font-size: 9.5px; color: #0073e6; font-weight:700;">+${dayPosts.length - 3} nhiệm vụ nữa</div>`;
       }
 
       cell.innerHTML = `
@@ -521,7 +589,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // --- 5. RENDER TABLE VIEW FOR QUEUE/DRAFTS ---
+  // --- 5. RENDER TABLE VIEW CHO TOÀN BỘ KẾ HOẠCH ---
   function renderTableView(posts) {
     if (!tableView) return;
     tableView.innerHTML = '';
@@ -529,8 +597,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (posts.length === 0) {
       tableView.innerHTML = `
         <div class="table-card" style="padding: 40px 20px; text-align: center; color: var(--text-muted);">
-          <div style="font-size: 13px; font-weight: 600;">Không có bài viết nào trong mục này</div>
-          <div style="font-size: 12px; margin-top: 4px;">Bấm nút "+ Bài viết mới" để lên kế hoạch content</div>
+          <div style="font-size: 13px; font-weight: 600;">Không có bài viết nào phù hợp bộ lọc</div>
         </div>
       `;
       return;
@@ -549,21 +616,23 @@ document.addEventListener('DOMContentLoaded', () => {
       const assigneeNames = (p.assignees || []).map(id => store.getMemberById(id)?.name || id).join(', ');
 
       row.innerHTML = `
-        <div style="min-width: 110px;">
+        <div style="min-width: 120px;">
           <span class="card-channel-tag" style="background: ${platInfo.bg}; color: ${platInfo.color};">
             ${platInfo.name}
           </span>
           <div style="font-size: 11px; font-weight: 700; color: var(--text-main); margin-top: 4px;">
-            ${p.date} - ${p.time}
+            ${formatDateDisplay(p.date)} - ${p.time}
           </div>
+          <div style="font-size: 10px; color: #0284c7; font-weight: 600;">${p.phase || ''}</div>
         </div>
         <div style="flex: 1; min-width: 0;">
-          <div style="font-size: 13px; font-weight: 600; color: var(--text-main);">${p.title}</div>
-          <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          <div style="font-size: 13px; font-weight: 700; color: var(--text-main);">${p.title}</div>
+          <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
             ${p.content}
           </div>
-          <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">
-            Phụ trách: <strong>${assigneeNames}</strong> &bull; Trạng thái: <span style="color: ${statusInfo.color}; font-weight: 600;">${statusInfo.name}</span>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+            Định dạng: <strong>${p.format || 'Bài viết'}</strong> &bull; Phụ trách: <strong>${assigneeNames}</strong>
+            ${p.note ? ` &bull; <em>Ghi chú: ${p.note}</em>` : ''}
           </div>
         </div>
         <div style="display: flex; gap: 8px;">
@@ -592,13 +661,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (postId) {
       const p = store.getPostById(postId);
       if (!p) return;
-      composeTitle.textContent = 'Chỉnh Sửa Bài Viết';
+      composeTitle.textContent = 'Chỉnh Sửa Bài Viết Truyền Thông REBOX';
       document.getElementById('compose-title-input').value = p.title || '';
       composeTextarea.value = p.content || '';
       composeDateInput.value = p.date || '';
       composeTimeInput.value = p.time || '12:00';
       composeImageInput.value = p.image || '';
       composeNoteInput.value = p.note || '';
+      document.getElementById('compose-format-input').value = p.format || 'Bài viết';
       document.getElementById('compose-status').value = p.status || 'scheduled';
 
       if (p.platforms && p.platforms.length > 0) {
@@ -610,10 +680,11 @@ document.addEventListener('DOMContentLoaded', () => {
         composeAssigneeSelect.value = p.assignees[0];
       }
     } else {
-      composeTitle.textContent = 'Soạn Bài Viết Mới (New Post)';
-      const todayStr = defaultDate || new Date().toISOString().split('T')[0];
+      composeTitle.textContent = 'Soạn Bài Viết Mới Cho Chiến Dịch REBOX';
+      const todayStr = defaultDate || state.currentDate.toISOString().split('T')[0];
       composeDateInput.value = todayStr;
       composeTimeInput.value = '11:15';
+      document.getElementById('compose-format-input').value = 'Bài viết, thông cáo báo chí';
       document.getElementById('compose-status').value = 'scheduled';
       const firstPill = profilePillsWrap.querySelector('[data-id="facebook"]');
       if (firstPill) firstPill.classList.add('selected');
@@ -633,7 +704,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const pill = document.createElement('div');
       pill.className = 'profile-pill-item';
       pill.dataset.id = plat.id;
-      pill.textContent = `${plat.name} @taythi`;
+      pill.textContent = `${plat.name} (${plat.code})`;
       pill.addEventListener('click', () => {
         pill.classList.toggle('selected');
       });
@@ -654,7 +725,7 @@ document.addEventListener('DOMContentLoaded', () => {
     members.forEach(m => {
       const opt = document.createElement('option');
       opt.value = m.id;
-      opt.textContent = `${m.name} (${m.role})`;
+      opt.textContent = `${m.name} (${m.role}) - SĐT: ${m.phone}`;
       composeAssigneeSelect.appendChild(opt);
     });
   }
@@ -670,23 +741,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const plat = PLATFORMS[p.platforms[0]] || PLATFORMS.facebook;
     const status = POST_STATUSES[p.status] || POST_STATUSES.scheduled;
-    const assignees = (p.assignees || []).map(id => store.getMemberById(id)?.name || id).join(', ');
+    const assignees = (p.assignees || []).map(id => {
+      const m = store.getMemberById(id);
+      return m ? `${m.name} (${m.phone})` : id;
+    }).join(', ');
 
-    const text = `[THONG BAO LICH DANG BAI - TEAM NGUYEN THI TAY THI]
+    const text = `[THONG BAO NHIEM VU TRUYEN THONG - DU AN REBOX]
 ------------------------------------------------------------
 Tieu de: ${p.title.toUpperCase()}
+Giai doan: ${p.phase || 'Ke hoach REBOX'}
+Dinh dang: ${p.format || 'Bai viet'}
 Kenh xuat ban: ${plat.name}
-Thoi gian dang: ${p.time} ngay ${p.date}
+Thoi gian dang: ${p.time} ngay ${formatDateDisplay(p.date)}
 Trang thai: ${status.name}
 Nhan su phu trach: ${assignees}
 
-Noi dung:
-${p.content || 'Xem chi tiet tai he thong'}
+Noi dung chu chot:
+${p.content || 'Xem chi tiet tai he thong REBOX'}
 
-Ghi chu:
-${p.note || 'Khong co ghi chu'}
+Ghi chu / KPI / Chay ads:
+${p.note || 'Khong co ghi chu dac biet'}
 ------------------------------------------------------------
-De nghi cac thanh vien lien quan hoan thanh dung tien do!`;
+De nghi team Content, Design, Media chu dong phoi hop dung tien do!`;
 
     remindTextBox.textContent = text;
     remindModal.classList.add('active');
@@ -707,57 +783,97 @@ De nghi cac thanh vien lien quan hoan thanh dung tien do!`;
 
   // --- BIND EVENTS ---
   function bindEvents() {
-    // Sidebar view switching
     sidebarItems.forEach(item => {
       item.addEventListener('click', () => {
         sidebarItems.forEach(i => i.classList.remove('active'));
         item.classList.add('active');
         state.currentView = item.dataset.view;
+
+        // Nếu bấm vào giai đoạn 1, 2, 3 thì nhảy tới ngày đầu tháng tương ứng
+        if (item.dataset.view === 'phase1') {
+          state.currentDate = new Date('2026-12-01');
+          state.weekStartDate = getMonday(new Date('2026-12-01'));
+          state.selectedPhase = 'Giai đoạn 1 (T12/2026)';
+        } else if (item.dataset.view === 'phase2') {
+          state.currentDate = new Date('2027-01-01');
+          state.weekStartDate = getMonday(new Date('2027-01-01'));
+          state.selectedPhase = 'Giai đoạn 2 (T01/2027)';
+        } else if (item.dataset.view === 'phase3') {
+          state.currentDate = new Date('2027-02-01');
+          state.weekStartDate = getMonday(new Date('2027-02-01'));
+          state.selectedPhase = 'Giai đoạn 3 (T02/2027)';
+        } else if (item.dataset.view === 'calendar') {
+          state.selectedPhase = 'all';
+        }
+
+        renderMemberFilterBar();
         renderCurrentView();
       });
     });
 
-    // Week / Month Mode Toggle
     btnModeWeek.addEventListener('click', () => {
       btnModeWeek.classList.add('active');
       btnModeMonth.classList.remove('active');
       state.calendarMode = 'week';
-      renderCurrentView();
+      if (state.currentView === 'members' || state.currentView === 'brand') {
+        switchView('calendar');
+      } else {
+        renderCurrentView();
+      }
     });
 
     btnModeMonth.addEventListener('click', () => {
       btnModeMonth.classList.add('active');
       btnModeWeek.classList.remove('active');
       state.calendarMode = 'month';
-      renderCurrentView();
+      if (state.currentView === 'members' || state.currentView === 'brand') {
+        switchView('calendar');
+      } else {
+        renderCurrentView();
+      }
     });
 
-    // Date Navigation
     document.getElementById('btn-nav-prev').addEventListener('click', () => {
       if (state.calendarMode === 'week') {
         state.weekStartDate.setDate(state.weekStartDate.getDate() - 7);
+        state.currentDate.setDate(state.currentDate.getDate() - 7);
       } else {
         state.currentDate.setMonth(state.currentDate.getMonth() - 1);
+        state.weekStartDate = getMonday(state.currentDate);
       }
-      renderCurrentView();
+      if (state.currentView === 'members' || state.currentView === 'brand') {
+        switchView('calendar');
+      } else {
+        renderCurrentView();
+      }
     });
 
     document.getElementById('btn-nav-next').addEventListener('click', () => {
       if (state.calendarMode === 'week') {
         state.weekStartDate.setDate(state.weekStartDate.getDate() + 7);
+        state.currentDate.setDate(state.currentDate.getDate() + 7);
       } else {
         state.currentDate.setMonth(state.currentDate.getMonth() + 1);
+        state.weekStartDate = getMonday(state.currentDate);
       }
-      renderCurrentView();
+      if (state.currentView === 'members' || state.currentView === 'brand') {
+        switchView('calendar');
+      } else {
+        renderCurrentView();
+      }
     });
 
     document.getElementById('btn-nav-today').addEventListener('click', () => {
-      state.currentDate = new Date();
-      state.weekStartDate = getMonday(new Date());
-      renderCurrentView();
+      // Trở lại mốc đầu chiến dịch 01/12/2026
+      state.currentDate = new Date('2026-12-01');
+      state.weekStartDate = getMonday(new Date('2026-12-01'));
+      if (state.currentView === 'members' || state.currentView === 'brand') {
+        switchView('calendar');
+      } else {
+        renderCurrentView();
+      }
     });
 
-    // Compose Actions
     document.getElementById('btn-open-compose').addEventListener('click', () => openComposeDrawer());
     document.getElementById('btn-close-compose').addEventListener('click', closeComposeDrawer);
     document.getElementById('btn-cancel-compose').addEventListener('click', closeComposeDrawer);
@@ -775,6 +891,7 @@ De nghi cac thanh vien lien quan hoan thanh dung tien do!`;
       e.preventDefault();
       const title = document.getElementById('compose-title-input').value.trim();
       const content = composeTextarea.value.trim();
+      const format = document.getElementById('compose-format-input').value.trim();
       const date = composeDateInput.value;
       const time = composeTimeInput.value;
       const status = document.getElementById('compose-status').value;
@@ -786,6 +903,7 @@ De nghi cac thanh vien lien quan hoan thanh dung tien do!`;
       const data = {
         title: title || content.slice(0, 40) + '...',
         content,
+        format,
         date,
         time,
         status,
@@ -800,11 +918,15 @@ De nghi cac thanh vien lien quan hoan thanh dung tien do!`;
         showToast('Đã cập nhật bài viết thành công!');
       } else {
         store.addPost(data);
-        showToast('Đã lên lịch bài viết mới!');
+        showToast('Đã thêm bài viết mới vào chiến dịch REBOX!');
       }
 
       closeComposeDrawer();
-      renderCurrentView();
+      if (state.currentView === 'members' || state.currentView === 'brand') {
+        switchView('calendar');
+      } else {
+        renderCurrentView();
+      }
     });
 
     document.getElementById('btn-save-draft').addEventListener('click', () => {
@@ -812,16 +934,18 @@ De nghi cac thanh vien lien quan hoan thanh dung tien do!`;
       composeForm.dispatchEvent(new Event('submit'));
     });
 
-    // Search bar
     const searchInput = document.getElementById('search-posts-input');
     if (searchInput) {
       searchInput.addEventListener('input', (e) => {
         state.searchKeyword = e.target.value;
-        renderCurrentView();
+        if (state.currentView === 'members' || state.currentView === 'brand') {
+          switchView('calendar');
+        } else {
+          renderCurrentView();
+        }
       });
     }
 
-    // Contact Config Form
     document.getElementById('form-contact-config').addEventListener('submit', (e) => {
       e.preventDefault();
       if (state.editingContactKey) {
@@ -837,7 +961,6 @@ De nghi cac thanh vien lien quan hoan thanh dung tien do!`;
       contactConfigModal.classList.remove('active');
     });
 
-    // Member Form (Add & Edit)
     document.getElementById('btn-open-add-member').addEventListener('click', () => {
       openEditMemberModal();
     });
@@ -860,7 +983,7 @@ De nghi cac thanh vien lien quan hoan thanh dung tien do!`;
 
       const memberData = {
         name,
-        role: role || 'Cộng sự',
+        role: role || 'Thành viên',
         phone,
         email,
         dob,
@@ -881,7 +1004,6 @@ De nghi cac thanh vien lien quan hoan thanh dung tien do!`;
       renderMemberFilterBar();
     });
 
-    // Remind Modal Copy
     document.getElementById('btn-copy-remind').addEventListener('click', () => {
       navigator.clipboard.writeText(remindTextBox.textContent).then(() => {
         showToast('Đã sao chép nội dung thông báo vào bộ nhớ tạm!');
@@ -893,14 +1015,13 @@ De nghi cac thanh vien lien quan hoan thanh dung tien do!`;
       remindModal.classList.remove('active');
     });
 
-    // Backup & Restore
     document.getElementById('btn-export-json').addEventListener('click', () => {
       const json = store.exportData();
       const blob = new Blob([json], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Sprout_TayThi_Full_${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `REBOX_Campaign_TayThi_${new Date().toISOString().split('T')[0]}.json`;
       a.click();
       URL.revokeObjectURL(url);
       showToast('Đã xuất file sao lưu dữ liệu toàn bộ!');
