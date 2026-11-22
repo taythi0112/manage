@@ -81,9 +81,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function getAdsBadgeHtml(adsText, isMini = false) {
     if (!adsText) return '';
     if (isMini) {
-      return `<span class="badge-ads" style="font-size: 8.5px; padding: 1.5px 4px;" title="Chiến dịch chạy quảng cáo: ${adsText}">${ADS_ICON}ADS</span>`;
+      return `<span class="badge-ads" style="font-size: 8.5px; padding: 1.5px 5px;" title="Chiến dịch chạy quảng cáo: ${adsText}">${ADS_ICON}<span>ADS</span></span>`;
     }
-    return `<div style="margin-top: 4px;"><span class="badge-ads" title="Chiến dịch chạy quảng cáo: ${adsText}">${ADS_ICON}ADS: ${adsText}</span></div>`;
+    return `<div style="margin-top: 4px; display: block;"><span class="badge-ads" title="Chiến dịch chạy quảng cáo: ${adsText}">${ADS_ICON}<span>ADS: ${adsText}</span></span></div>`;
   }
 
   // DOM Elements
@@ -541,7 +541,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <div class="card-content-excerpt" title="${p.title}"><strong>${p.title}</strong><br>${p.content}</div>
             ${imgHtml}
-            ${p.ads ? `<div style="font-size: 9.5px; color: #6d28d9; font-weight: 700; background: #f5f3ff; padding: 2px 5px; border-radius: 3px; border: 1px solid #ddd6fe; margin-top: 3px; display: inline-flex; align-items: center; gap: 3px;">${ADS_ICON}Ads: ${p.ads}</div>` : ''}
+            ${p.ads ? `<div style="font-size: 9px; color: #0f172a; font-weight: 700; background: #ffffff; padding: 2.5px 6px; border-radius: 4px; border: 1px solid #cbd5e1; margin-top: 3px; display: inline-flex; align-items: center; gap: 3.5px; line-height: 1.25; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);">${ADS_ICON}<span>Ads: ${p.ads}</span></div>` : ''}
             ${p.note ? `<div style="font-size: 10px; color: #64748b; background: #f8fafc; padding: 3px 5px; border-radius: 2px; margin-top: 2px;">Ghi chú: ${p.note}</div>` : ''}
             <div class="card-footer-actions">
               <span class="assignee-initials" title="Phụ trách: ${assigneeCodes}">PT: ${assigneeCodes}</span>
@@ -703,28 +703,32 @@ document.addEventListener('DOMContentLoaded', () => {
       const assigneeNames = (p.assignees || []).map(id => store.getMemberById(id)?.name || id).join(', ');
 
       row.innerHTML = `
-        <div style="min-width: 140px; max-width: 180px;">
-          <div style="display: flex; flex-wrap: wrap; gap: 2px;">
+        <div style="width: 215px; min-width: 215px; max-width: 215px; flex-shrink: 0;">
+          <div style="display: flex; flex-wrap: wrap; gap: 3px; align-items: center;">
             ${platBadgesHtml}
           </div>
           ${adsBadgeHtml}
-          <div style="font-size: 11px; font-weight: 700; color: var(--text-main); margin-top: 5px;">
-            ${formatDateDisplay(p.date)} - ${p.time}
+          <div style="margin-top: 6px; padding-top: 5px; border-top: 1px dashed #e2e8f0;">
+            <div style="font-size: 11.5px; font-weight: 800; color: #0f172a; letter-spacing: 0.2px;">
+              ${formatDateDisplay(p.date)}
+            </div>
+            <div style="font-size: 10.5px; font-weight: 600; color: #64748b; margin-top: 2px;">
+              ${p.time} &bull; <span style="color: #0284c7;">${p.phase ? p.phase.replace('Giai đoạn ', 'GĐ ') : ''}</span>
+            </div>
           </div>
-          <div style="font-size: 10px; color: #0284c7; font-weight: 600; margin-top: 2px;">${p.phase || ''}</div>
         </div>
         <div style="flex: 1; min-width: 0;">
-          <div style="font-size: 13px; font-weight: 700; color: var(--text-main);">${p.title}</div>
-          <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+          <div style="font-size: 13.5px; font-weight: 700; color: var(--text-main); line-height: 1.4;">${p.title}</div>
+          <div style="font-size: 12px; color: var(--text-secondary); margin-top: 3px; line-height: 1.45;">
             ${p.content}
           </div>
-          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 5px; line-height: 1.4;">
             Định dạng: <strong>${p.format || 'Bài viết'}</strong> &bull; Phụ trách: <strong>${assigneeNames}</strong>
-            ${p.ads ? ` &bull; <strong style="color: #e11d48;">Kênh Ads: ${p.ads}</strong>` : ''}
+            ${p.ads ? ` &bull; <strong style="color: #0f172a; background: #f8fafc; padding: 1.5px 5px; border-radius: 3px; border: 1px solid #cbd5e1;">Ads: ${p.ads}</strong>` : ''}
             ${p.note ? ` &bull; <em>Ghi chú: ${p.note}</em>` : ''}
           </div>
         </div>
-        <div style="display: flex; gap: 8px;">
+        <div style="display: flex; gap: 8px; flex-shrink: 0; align-items: flex-start; margin-top: 2px;">
           <button class="btn-sprout-secondary btn-remind-row" data-id="${p.id}" style="padding: 4px 8px; font-size: 11px;">Nhắc việc</button>
           <button class="btn-sprout-secondary btn-edit-row" data-id="${p.id}" style="padding: 4px 8px; font-size: 11px;">Chỉnh sửa</button>
         </div>
