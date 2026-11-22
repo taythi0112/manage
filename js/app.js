@@ -1,7 +1,7 @@
 /**
  * Sprout Social Controller - Content Calendar & Publishing REBOX
  * Quản lý chiến dịch truyền thông REBOX (Giai đoạn 1, 2, 3)
- * Đội ngũ: Nguyễn Thị Tây Thi, Mỹ Phạm, Nguyễn Thái Vy, Mai Linh
+ * Đội ngũ Chuyên viên PR: Nguyễn Thị Tây Thi, Phạm Thị Thuỳ Mỹ, Nguyễn Thái Vy, Mai Thuỳ Linh, Trịnh Trương Ái Mỹ
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -403,9 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       row.innerHTML = `
         <div>
-          <div style="font-weight: 700; color: var(--text-main);">
-            ${m.name} ${isLeader ? '<span style="font-size: 10px; background: #e0f2fe; color: #0284c7; padding: 2px 5px; border-radius: 3px; margin-left: 4px;">Trưởng dự án</span>' : ''}
-          </div>
+          <div style="font-weight: 700; color: var(--text-main);">${m.name}</div>
           <div style="font-size: 11px; color: var(--text-muted);">Mã: ${m.code}</div>
         </div>
         <div>${m.role || 'Chuyên viên'}</div>
@@ -821,7 +819,7 @@ document.addEventListener('DOMContentLoaded', () => {
     members.forEach(m => {
       const opt = document.createElement('option');
       opt.value = m.id;
-      opt.textContent = `${m.name} (${m.role}) - SĐT: ${m.phone}`;
+      opt.textContent = `${m.name} (${m.role})${m.phone ? ' - SĐT: ' + m.phone : ''}`;
       composeAssigneeSelect.appendChild(opt);
     });
   }

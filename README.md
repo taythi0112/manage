@@ -1,6 +1,6 @@
 # Hệ Thống Quản Lý Lịch Trình & Kế Hoạch Đăng Bài REBOX
 **Dự Án:** Hộp Đựng Thức Ăn Tái Sử Dụng REBOX - ĐH Sư Phạm (ĐH Đà Nẵng)  
-**Nhân sự chủ chốt:** Nguyễn Thị Tây Thi, Mỹ Phạm, Nguyễn Thái Vy, Mai Linh  
+**Nhân sự chủ chốt (Chuyên viên PR):** Nguyễn Thị Tây Thi, Phạm Thị Thuỳ Mỹ, Nguyễn Thái Vy, Mai Thuỳ Linh, Trịnh Trương Ái Mỹ  
 **Đường dẫn truy cập:** Mở file [index.html](file:///e:/TAYTHI/NOIBO/index.html) trực tiếp trên trình duyệt.
 
 ---
@@ -32,12 +32,13 @@ Theo đúng kế hoạch trong tài liệu PDF 21 trang, các hoạt động tru
 
 ---
 
-## 👥 Đội Ngũ Nhân Sự Chính Thức (4 Thành Viên)
+## 👥 Đội Ngũ Nhân Sự Chính Thức (5 Chuyên Viên PR)
 
-1. **Nguyễn Thị Tây Thi** (`TT`): Trưởng nhóm Content & Trưởng dự án REBOX (`0359093139`, `nguyenthitaythi2007@gmail.com`).
-2. **Mỹ Phạm** (`MP`): Phụ trách Nội dung & Copywriting (`0394681091`, `mypham1091@gmail.com`).
-3. **Nguyễn Thái Vy** (`TV`): Thiết kế Đồ họa & Key Visual (`0768520511`, `nguyenthaivy0511@gmail.com`).
-4. **Mai Linh** (`ML`): Sản xuất Video, Media & Đối ngoại (`0374596585`, `Maitlinh209@gmail.com`).
+1. **Nguyễn Thị Tây Thi** (`TT`): Chuyên viên PR Chiến lược & Quan hệ Đối ngoại - `0359093139`, `nguyenthitaythi2007@gmail.com`, sinh ngày 01/12/2007.
+2. **Phạm Thị Thuỳ Mỹ** (`PM`): Chuyên viên PR (Phụ trách Nội dung & Copywriting) - `0394681091`, `mypham1091@gmail.com`, sinh ngày 09/10/2007.
+3. **Nguyễn Thái Vy** (`TV`): Chuyên viên PR (Thiết kế Đồ họa & Key Visual) - `0768520511`, `nguyenthaivy0511@gmail.com`, sinh ngày 05/11/2007.
+4. **Mai Thuỳ Linh** (`ML`): Chuyên viên PR (Sản xuất Video, Media & Đối ngoại) - `0374596585`, `Maitlinh209@gmail.com`, sinh ngày 02/09/2007.
+5. **Trịnh Trương Ái Mỹ** (`AM`): Chuyên viên PR - `aimychannel34@gmail.com`, sinh ngày 03/04/2007.
 
 *(Có nút **`Xem lịch trình`** riêng cho từng thành viên tại trang Nhân sự để lọc nhanh bài đăng của người đó).*
 
