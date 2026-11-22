@@ -14,6 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
     weekStartDate: getMonday(new Date('2026-12-01')),
     selectedMemberId: 'all',
     selectedPhase: 'all',
+    selectedPlatform: 'all',
+    onlyAds: false,
     searchKeyword: '',
     editingPostId: null,
     editingContactKey: null,
@@ -47,6 +49,42 @@ document.addEventListener('DOMContentLoaded', () => {
     cart: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>`,
     map: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>`
   };
+
+  // Biểu tượng Logo chính thức cho từng Kênh & Quảng Cáo (SVG sắc nét)
+  const PLATFORM_ICONS = {
+    tiktok: `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block; vertical-align:-1px;"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.49 6.27 6.27 0 0 0 1.84-4.48V8.71a8.21 8.21 0 0 0 4.93 1.63v-3.65z"/></svg>`,
+    facebook: `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block; vertical-align:-1px;"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>`,
+    website: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-1px;"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path></svg>`,
+    confessions: `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block; vertical-align:-1px;"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>`,
+    httt: `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block; vertical-align:-1px;"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3z M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>`,
+    bao_danang: `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block; vertical-align:-1px;"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>`,
+    offline: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-1px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`,
+    email: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-1px;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>`
+  };
+
+  const ADS_ICON = `<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block; vertical-align:-1px;"><path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg>`;
+
+  function getPlatformBadgeHtml(platId) {
+    const platInfo = PLATFORMS[platId] || { name: platId.toUpperCase(), code: platId.toUpperCase(), bg: '#f1f5f9', color: '#334155', border: '#cbd5e1' };
+    const icon = PLATFORM_ICONS[platId] || '';
+    const borderStyle = platInfo.border ? `border: 1px solid ${platInfo.border};` : '';
+    return `<span class="card-channel-tag" style="background: ${platInfo.bg}; color: ${platInfo.color}; ${borderStyle} font-weight: 700; margin-right: 3px; margin-bottom: 2px;">${icon}<span>${platInfo.name}</span></span>`;
+  }
+
+  function getPlatformMiniTagHtml(platId) {
+    const platInfo = PLATFORMS[platId] || { name: platId.toUpperCase(), code: platId.toUpperCase(), bg: '#f1f5f9', color: '#334155', border: '#cbd5e1' };
+    const icon = PLATFORM_ICONS[platId] || '';
+    const borderStyle = platInfo.border ? `border: 1px solid ${platInfo.border};` : '';
+    return `<span class="card-channel-tag" style="background: ${platInfo.bg}; color: ${platInfo.color}; ${borderStyle} font-size: 8.5px; padding: 1.5px 4.5px; margin-right: 2px;">${icon}<span>${platInfo.code}</span></span>`;
+  }
+
+  function getAdsBadgeHtml(adsText, isMini = false) {
+    if (!adsText) return '';
+    if (isMini) {
+      return `<span class="badge-ads" style="font-size: 8.5px; padding: 1.5px 4px;" title="Chiến dịch chạy quảng cáo: ${adsText}">${ADS_ICON}ADS</span>`;
+    }
+    return `<div style="margin-top: 4px;"><span class="badge-ads" title="Chiến dịch chạy quảng cáo: ${adsText}">${ADS_ICON}ADS: ${adsText}</span></div>`;
+  }
 
   // DOM Elements
   const sidebarItems = document.querySelectorAll('.sidebar-menu-item');
@@ -90,6 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const composeTimeInput = document.getElementById('compose-time');
   const composeAssigneeSelect = document.getElementById('compose-assignee');
   const composeImageInput = document.getElementById('compose-image');
+  const composeAdsInput = document.getElementById('compose-ads');
   const composeNoteInput = document.getElementById('compose-note');
 
   // Remind Modal
@@ -146,7 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.textContent = `${m.name} (${m.code})`;
       btn.addEventListener('click', () => {
         state.selectedMemberId = m.id;
-        // Nếu người dùng đang ở trang khác (nhân sự, 15 kênh liên hệ...), tự động chuyển về Lịch trình để xem lịch của người đó!
         if (state.currentView === 'members' || state.currentView === 'brand') {
           switchView('calendar');
         } else {
@@ -176,11 +214,9 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.textContent = p.label;
       btn.addEventListener('click', () => {
         state.selectedPhase = p.id;
-        // Nhảy lịch tới đúng tháng của giai đoạn
         state.currentDate = new Date(p.jumpDate);
         state.weekStartDate = getMonday(new Date(p.jumpDate));
 
-        // Nếu người dùng đang ở trang khác (nhân sự, thương hiệu...), tự động chuyển về Calendar!
         if (state.currentView === 'members' || state.currentView === 'brand') {
           state.currentView = 'calendar';
         }
@@ -189,6 +225,46 @@ document.addEventListener('DOMContentLoaded', () => {
         renderMemberFilterBar();
         renderCurrentView();
         showToast(`Đã chuyển tới: ${p.label}`);
+      });
+      memberFilterStrip.appendChild(btn);
+    });
+
+    // Thêm các nút lọc theo Kênh & Quảng cáo (Ads)
+    const platDivider = document.createElement('span');
+    platDivider.style.cssText = 'border-left: 1px solid var(--sprout-border); height: 16px; margin: 0 4px;';
+    memberFilterStrip.appendChild(platDivider);
+
+    const channelFilters = [
+      { id: 'all', label: 'Tất cả kênh', isAds: false },
+      { id: 'ads_only', label: 'Chỉ bài chạy Ads (5 bài)', isAds: true },
+      { id: 'tiktok', label: 'TikTok', isAds: false },
+      { id: 'facebook', label: 'Facebook', isAds: false },
+      { id: 'website', label: 'Website REBOX', isAds: false },
+      { id: 'confessions', label: 'UED Confessions', isAds: false },
+      { id: 'httt', label: 'Kênh trường (HTTT)', isAds: false }
+    ];
+
+    channelFilters.forEach(cf => {
+      const btn = document.createElement('button');
+      const isSelected = cf.isAds ? state.onlyAds : (!state.onlyAds && state.selectedPlatform === cf.id);
+      btn.className = `filter-chip ${cf.isAds ? 'chip-ads' : ''} ${isSelected ? 'active' : ''}`;
+      btn.textContent = cf.label;
+      btn.addEventListener('click', () => {
+        if (cf.isAds) {
+          state.onlyAds = !state.onlyAds;
+          state.selectedPlatform = 'all';
+        } else {
+          state.onlyAds = false;
+          state.selectedPlatform = cf.id;
+        }
+
+        if (state.currentView === 'members' || state.currentView === 'brand') {
+          switchView('calendar');
+        } else {
+          renderCurrentView();
+        }
+        renderMemberFilterBar();
+        showToast(cf.isAds ? (state.onlyAds ? 'Đang lọc các bài chạy Ads (Facebook & TikTok Ads)' : 'Đã bỏ lọc Ads') : `Lọc bài viết kênh: ${cf.label}`);
       });
       memberFilterStrip.appendChild(btn);
     });
@@ -236,7 +312,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const posts = store.filterPosts({
       memberId: state.selectedMemberId,
       keyword: state.searchKeyword,
-      phase: phaseFilter
+      phase: phaseFilter,
+      platform: state.selectedPlatform,
+      onlyAds: state.onlyAds
     });
 
     calendarContainer.style.display = 'none';
@@ -442,8 +520,10 @@ document.addEventListener('DOMContentLoaded', () => {
           const card = document.createElement('div');
           card.className = 'sprout-post-card';
 
-          const primaryPlatformId = (p.platforms && p.platforms[0]) || 'facebook';
-          const platInfo = PLATFORMS[primaryPlatformId] || PLATFORMS.facebook;
+          const platTagsHtml = (p.platforms && p.platforms.length > 0 ? p.platforms : ['facebook'])
+            .map(platId => getPlatformMiniTagHtml(platId)).join('');
+          const adsHtml = getAdsBadgeHtml(p.ads, true);
+
           const assigneeCodes = (p.assignees || []).map(id => store.getMemberById(id)?.code || 'NV').join(', ');
 
           let imgHtml = '';
@@ -452,15 +532,17 @@ document.addEventListener('DOMContentLoaded', () => {
           }
 
           card.innerHTML = `
-            <div class="card-top-meta">
-              <span class="card-channel-tag" style="background: ${platInfo.bg}; color: ${platInfo.color};">
-                ${platInfo.code} ${p.format ? `&bull; ${p.format}` : ''}
-              </span>
+            <div class="card-top-meta" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; margin-bottom: 4px;">
+              <div style="display: flex; flex-wrap: wrap; gap: 2px; align-items: center;">
+                ${platTagsHtml}
+                ${adsHtml}
+              </div>
               <span class="card-time">${p.time}</span>
             </div>
             <div class="card-content-excerpt" title="${p.title}"><strong>${p.title}</strong><br>${p.content}</div>
             ${imgHtml}
-            ${p.note ? `<div style="font-size: 10px; color: #64748b; background: #f8fafc; padding: 3px 5px; border-radius: 2px;">Ghi chú: ${p.note}</div>` : ''}
+            ${p.ads ? `<div style="font-size: 9.5px; color: #6d28d9; font-weight: 700; background: #f5f3ff; padding: 2px 5px; border-radius: 3px; border: 1px solid #ddd6fe; margin-top: 3px; display: inline-flex; align-items: center; gap: 3px;">${ADS_ICON}Ads: ${p.ads}</div>` : ''}
+            ${p.note ? `<div style="font-size: 10px; color: #64748b; background: #f8fafc; padding: 3px 5px; border-radius: 2px; margin-top: 2px;">Ghi chú: ${p.note}</div>` : ''}
             <div class="card-footer-actions">
               <span class="assignee-initials" title="Phụ trách: ${assigneeCodes}">PT: ${assigneeCodes}</span>
               <div class="action-links">
@@ -547,9 +629,12 @@ document.addEventListener('DOMContentLoaded', () => {
       let capsulesHtml = '';
       dayPosts.slice(0, 3).forEach(p => {
         const primaryPlat = PLATFORMS[p.platforms[0]] || PLATFORMS.facebook;
+        const platTag = primaryPlat.code || 'FB';
+        const adsTag = p.ads ? ' [ADS]' : '';
         capsulesHtml += `
-          <div class="month-post-capsule" style="border-left-color: ${primaryPlat.color};" data-id="${p.id}" title="${p.time} - ${p.title}">
+          <div class="month-post-capsule" style="border-left-color: ${primaryPlat.color};" data-id="${p.id}" title="${p.time} - [${platTag}] ${p.title} ${p.ads ? '(' + p.ads + ')' : ''}">
             <span style="font-weight:700;">${p.time}</span>
+            <span style="font-weight:700; color:${primaryPlat.color};">[${platTag}${adsTag}]</span>
             <span>${p.title}</span>
           </div>
         `;
@@ -610,20 +695,23 @@ document.addEventListener('DOMContentLoaded', () => {
       const row = document.createElement('div');
       row.className = 'table-row';
 
-      const primaryPlatformId = (p.platforms && p.platforms[0]) || 'facebook';
-      const platInfo = PLATFORMS[primaryPlatformId] || PLATFORMS.facebook;
+      const platBadgesHtml = (p.platforms && p.platforms.length > 0 ? p.platforms : ['facebook'])
+        .map(platId => getPlatformBadgeHtml(platId)).join('');
+      const adsBadgeHtml = getAdsBadgeHtml(p.ads);
+
       const statusInfo = POST_STATUSES[p.status] || POST_STATUSES.scheduled;
       const assigneeNames = (p.assignees || []).map(id => store.getMemberById(id)?.name || id).join(', ');
 
       row.innerHTML = `
-        <div style="min-width: 120px;">
-          <span class="card-channel-tag" style="background: ${platInfo.bg}; color: ${platInfo.color};">
-            ${platInfo.name}
-          </span>
-          <div style="font-size: 11px; font-weight: 700; color: var(--text-main); margin-top: 4px;">
+        <div style="min-width: 140px; max-width: 180px;">
+          <div style="display: flex; flex-wrap: wrap; gap: 2px;">
+            ${platBadgesHtml}
+          </div>
+          ${adsBadgeHtml}
+          <div style="font-size: 11px; font-weight: 700; color: var(--text-main); margin-top: 5px;">
             ${formatDateDisplay(p.date)} - ${p.time}
           </div>
-          <div style="font-size: 10px; color: #0284c7; font-weight: 600;">${p.phase || ''}</div>
+          <div style="font-size: 10px; color: #0284c7; font-weight: 600; margin-top: 2px;">${p.phase || ''}</div>
         </div>
         <div style="flex: 1; min-width: 0;">
           <div style="font-size: 13px; font-weight: 700; color: var(--text-main);">${p.title}</div>
@@ -632,6 +720,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
             Định dạng: <strong>${p.format || 'Bài viết'}</strong> &bull; Phụ trách: <strong>${assigneeNames}</strong>
+            ${p.ads ? ` &bull; <strong style="color: #e11d48;">Kênh Ads: ${p.ads}</strong>` : ''}
             ${p.note ? ` &bull; <em>Ghi chú: ${p.note}</em>` : ''}
           </div>
         </div>
@@ -667,6 +756,7 @@ document.addEventListener('DOMContentLoaded', () => {
       composeDateInput.value = p.date || '';
       composeTimeInput.value = p.time || '12:00';
       composeImageInput.value = p.image || '';
+      if (composeAdsInput) composeAdsInput.value = p.ads || '';
       composeNoteInput.value = p.note || '';
       document.getElementById('compose-format-input').value = p.format || 'Bài viết';
       document.getElementById('compose-status').value = p.status || 'scheduled';
@@ -686,6 +776,7 @@ document.addEventListener('DOMContentLoaded', () => {
       composeTimeInput.value = '11:15';
       document.getElementById('compose-format-input').value = 'Bài viết, thông cáo báo chí';
       document.getElementById('compose-status').value = 'scheduled';
+      if (composeAdsInput) composeAdsInput.value = '';
       const firstPill = profilePillsWrap.querySelector('[data-id="facebook"]');
       if (firstPill) firstPill.classList.add('selected');
     }
@@ -704,7 +795,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const pill = document.createElement('div');
       pill.className = 'profile-pill-item';
       pill.dataset.id = plat.id;
-      pill.textContent = `${plat.name} (${plat.code})`;
+      const icon = PLATFORM_ICONS[plat.id] || '';
+      pill.innerHTML = `${icon}<span>${plat.name}</span>`;
       pill.addEventListener('click', () => {
         pill.classList.toggle('selected');
       });
@@ -896,6 +988,7 @@ De nghi team Content, Design, Media chu dong phoi hop dung tien do!`;
       const time = composeTimeInput.value;
       const status = document.getElementById('compose-status').value;
       const image = composeImageInput.value.trim();
+      const ads = composeAdsInput ? composeAdsInput.value.trim() : null;
       const note = composeNoteInput.value.trim();
       const platforms = getSelectedPlatforms();
       const assignees = [composeAssigneeSelect.value];
@@ -908,6 +1001,7 @@ De nghi team Content, Design, Media chu dong phoi hop dung tien do!`;
         time,
         status,
         image,
+        ads: ads || null,
         note,
         platforms,
         assignees
